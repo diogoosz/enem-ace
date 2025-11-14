@@ -1,16 +1,16 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
-import { useAuth, useFirestore } from '@/firebase';
+import { signInWithEmailAndPassword, sendEmailVerification, reload } from 'firebase/auth';
+import type { User } from 'firebase/auth';
+import { useAuth, useFirestore, useFirebase } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,8 +29,8 @@ const formSchema = z.object({
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showVerificationAlert, setShowVerificationAlert] = useState(false);
-  const auth = useAuth();
-  const firestore = useFirestore();
+  const [isVerifying, setIsVerifying] = useState(false);
+  const { auth, firestore } = useFirebase();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -41,6 +41,42 @@ export default function LoginPage() {
       password: '',
     },
   });
+
+  const redirectToApp = (user: User) => {
+    setIsVerifying(false);
+     getDoc(doc(firestore, 'customers', user.uid)).then(customerDoc => {
+      if (customerDoc.exists() && customerDoc.data()?.subscriptionName) {
+        toast({
+          title: 'Login realizado com sucesso!',
+          description: 'Bem-vindo de volta!',
+        });
+        router.push('/questoes');
+      } else {
+        toast({
+          title: 'Bem-vindo(a) de volta!',
+          description: 'Escolha seu plano para começar a estudar.',
+        });
+        router.push('/planos');
+      }
+    });
+  };
+
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+    if (isVerifying && auth?.currentUser) {
+      intervalId = setInterval(async () => {
+        const user = auth.currentUser;
+        if (user) {
+          await reload(user);
+          if (user.emailVerified) {
+            clearInterval(intervalId);
+            redirectToApp(user);
+          }
+        }
+      }, 2000);
+    }
+    return () => clearInterval(intervalId);
+  }, [isVerifying, auth, router]);
 
   const handleResendVerification = async () => {
     setIsLoading(true);
@@ -73,31 +109,17 @@ export default function LoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
+      // Force a reload of the user's profile to get the latest emailVerified status
+      await reload(user);
+
       if (!user.emailVerified) {
         setShowVerificationAlert(true);
+        setIsVerifying(true);
         setIsLoading(false);
         return;
       }
 
-      // Padronizado para a coleção 'customers'
-      const customerDocRef = doc(firestore, 'customers', user.uid);
-      const customerDoc = await getDoc(customerDocRef);
-
-      // Se o usuário tem um plano ativo, vai para as questões.
-      // Se não tem (documento não existe ou não tem subscriptionName), vai para a página de planos.
-      if (customerDoc.exists() && customerDoc.data()?.subscriptionName) {
-         toast({
-          title: 'Login realizado com sucesso!',
-          description: 'Bem-vindo de volta!',
-        });
-        router.push('/questoes');
-      } else {
-        toast({
-          title: 'Bem-vindo(a) de volta!',
-          description: 'Escolha seu plano para começar a estudar.',
-        });
-        router.push('/planos');
-      }
+      redirectToApp(user);
       
     } catch (error: any) {
       let description = 'Ocorreu um erro ao fazer login. Tente novamente.';
@@ -110,11 +132,7 @@ export default function LoginPage() {
         variant: 'destructive',
       });
       console.error(error);
-    } finally {
-      // Apenas para o loading se o alerta de verificação não for mostrado
-      if (!showVerificationAlert) {
-         setIsLoading(false);
-      }
+      setIsLoading(false);
     }
   }
 
@@ -131,13 +149,21 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           {showVerificationAlert && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertTitle className="font-bold">Verifique seu E-mail</AlertTitle>
-              <AlertDescription>
+            <Alert variant="default" className="mb-4 border-amber-500 bg-amber-50">
+              <AlertTitle className="font-bold text-amber-800">Verifique seu E-mail</AlertTitle>
+              <AlertDescription className='text-amber-700'>
                 Sua conta ainda não foi ativada. Por favor, clique no link que enviamos para o seu e-mail.
-                <Button variant="link" className="p-0 h-auto ml-1" onClick={handleResendVerification} disabled={isLoading}>
-                  Reenviar e-mail
-                </Button>
+                <div className="mt-2">
+                  <Button variant="link" className="p-0 h-auto text-amber-800" onClick={handleResendVerification} disabled={isLoading}>
+                    Reenviar e-mail
+                  </Button>
+                </div>
+                {isVerifying && (
+                    <div className='flex items-center text-sm text-amber-600 mt-2'>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Aguardando verificação...
+                    </div>
+                )}
               </AlertDescription>
             </Alert>
           )}
@@ -151,7 +177,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="seu@email.com" {...field} />
+                      <Input placeholder="seu@email.com" {...field} disabled={isVerifying} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -164,14 +190,14 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Senha</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <Input type="password" placeholder="••••••••" {...field} disabled={isVerifying} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" className="w-full" disabled={isLoading || isVerifying}>
+                {(isLoading || isVerifying) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Entrar
               </Button>
             </form>
