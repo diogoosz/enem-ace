@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -8,12 +9,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Sparkles, RefreshCw } from 'lucide-react';
+import { Loader2, Sparkles, RefreshCw, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { avaliacaoRedacao } from '@/ai/flows/avaliacao-redacao-ia';
 import type { AvaliacaoRedacaoOutput } from '@/ai/flows/avaliacao-redacao-ia';
 import { essayThemes } from '@/lib/themes';
 import { Progress } from '@/components/ui/progress';
+import { useAuthContext } from '@/components/auth/auth-provider';
+import { hasAccess } from '@/lib/subscriptions';
+import { AccessDenied } from '@/components/auth/access-denied';
+
 
 const formSchema = z.object({
   redacao: z.string().min(100, 'A redação deve ter no mínimo 100 caracteres.'),
@@ -24,17 +29,17 @@ function getRandomTheme() {
 }
 
 export default function RedacaoPage() {
+  const { userPlan } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
   const [currentTheme, setCurrentTheme] = useState('');
   const [avaliacao, setAvaliacao] = useState<AvaliacaoRedacaoOutput | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Evita loop de renderização definindo o tema apenas uma vez no cliente
-    if (!currentTheme) {
+    if (!currentTheme && hasAccess(userPlan, 'temas-redacao')) {
       setCurrentTheme(getRandomTheme());
     }
-  }, [currentTheme]);
+  }, [currentTheme, userPlan]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -44,6 +49,15 @@ export default function RedacaoPage() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!hasAccess(userPlan, 'correcao-redacao-completa')) {
+      toast({
+        title: 'Funcionalidade Bloqueada',
+        description: 'Faça upgrade para o plano Premium para ter suas redações corrigidas.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     setIsLoading(true);
     setAvaliacao(null);
     try {
@@ -73,6 +87,10 @@ export default function RedacaoPage() {
     form.reset();
     setAvaliacao(null);
   };
+
+  if (!hasAccess(userPlan, 'temas-redacao')) {
+    return <AccessDenied featureName="Área de Redação" />;
+  }
   
   const competencias = avaliacao ? [
     { name: "Competência 1", ...avaliacao.competencia1 },
@@ -84,8 +102,10 @@ export default function RedacaoPage() {
 
   const notaTotal = competencias.reduce((acc, comp) => acc + comp.nota, 0);
 
+  const canSubmit = hasAccess(userPlan, 'correcao-redacao-completa');
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-6">
       <Card>
         <CardHeader>
           <CardTitle className="font-headline text-3xl font-bold">Avaliação de Redação</CardTitle>
@@ -119,10 +139,16 @@ export default function RedacaoPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                Avaliar Redação
+              <Button type="submit" disabled={isLoading || !canSubmit}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {!canSubmit && <Lock className="mr-2 h-4 w-4" />}
+                {isLoading ? 'Avaliando...' : 'Avaliar Redação'}
               </Button>
+               {!canSubmit && (
+                <p className="text-sm text-amber-600">
+                  Faça upgrade para o plano Premium para ter sua redação avaliada.
+                </p>
+              )}
             </form>
           </Form>
         </CardContent>

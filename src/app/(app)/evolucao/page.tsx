@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -8,6 +9,9 @@ import type { ChartConfig } from '@/components/ui/chart';
 import { gerarTextoMotivacional } from '@/ai/flows/gerar-texto-motivacional-ia';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { useAuthContext } from '@/components/auth/auth-provider';
+import { hasAccess } from '@/lib/subscriptions';
+import { AccessDenied } from '@/components/auth/access-denied';
 
 const chartData = [
   { month: 'Janeiro', matematica: 186, fisica: 80, quimica: 200 },
@@ -35,12 +39,17 @@ const difficultyConfig = {
 } satisfies ChartConfig;
 
 export default function EvolucaoPage() {
+  const { userPlan } = useAuthContext();
   const [motivationalText, setMotivationalText] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     async function fetchMotivationalText() {
+      if (!hasAccess(userPlan, 'evolucao-completa')) {
+        setIsLoading(false);
+        return;
+      }
       setIsLoading(true);
       try {
         const historicoDesempenho = `
@@ -64,10 +73,14 @@ export default function EvolucaoPage() {
       }
     }
     fetchMotivationalText();
-  }, [toast]);
+  }, [toast, userPlan]);
     
+  if (!hasAccess(userPlan, 'evolucao-completa')) {
+    return <AccessDenied featureName="Evolução Completa" />;
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-6">
       <Card>
         <CardHeader>
           <CardTitle className="font-headline text-3xl font-bold">Sua Evolução</CardTitle>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -13,6 +14,9 @@ import { Loader2, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateEnemQuestion } from '@/ai/flows/geracao-questoes-extras-ia';
 import type { GenerateEnemQuestionOutput } from '@/ai/flows/geracao-questoes-extras-ia';
+import { useAuthContext } from '@/components/auth/auth-provider';
+import { hasAccess } from '@/lib/subscriptions';
+import { AccessDenied } from '@/components/auth/access-denied';
 
 const formSchema = z.object({
   subject: z.enum(['Matemática', 'Física', 'Química', 'Biologia', 'História', 'Geografia', 'Português']),
@@ -20,6 +24,7 @@ const formSchema = z.object({
 });
 
 export default function QuestoesExtrasPage() {
+  const { userPlan } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
   const [generatedQuestion, setGeneratedQuestion] = useState<GenerateEnemQuestionOutput | null>(null);
   const { toast } = useToast();
@@ -50,8 +55,12 @@ export default function QuestoesExtrasPage() {
     }
   }
 
+  if (!hasAccess(userPlan, 'questoes-extras')) {
+    return <AccessDenied featureName="Gerador de Questões Extras" />;
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-6">
       <Card>
         <CardHeader>
           <CardTitle className="font-headline text-3xl font-bold">Gerador de Questões Extras</CardTitle>

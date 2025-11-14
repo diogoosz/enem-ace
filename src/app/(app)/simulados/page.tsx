@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -17,6 +18,9 @@ import type { GeneratePersonalizedSimuladoOutput } from '@/ai/flows/simulados-pe
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { useAuthContext } from '@/components/auth/auth-provider';
+import { hasAccess } from '@/lib/subscriptions';
+import { AccessDenied } from '@/components/auth/access-denied';
 
 const formSchema = z.object({
   materia: z.enum(['Matemática', 'Física', 'Biologia', 'Química', 'História', 'Geografia', 'Português']),
@@ -24,7 +28,6 @@ const formSchema = z.object({
   numeroQuestoes: z.coerce.number().min(1, 'Mínimo 1 questão').max(10, 'Máximo 10 questões'),
 });
 
-// Since QuestaoSchema is not exported from the flow, we derive the type here.
 type QuestionType = GeneratePersonalizedSimuladoOutput['simulado'][number];
 
 type SimuladoState = {
@@ -35,6 +38,7 @@ type SimuladoState = {
 }
 
 export default function SimuladosPage() {
+  const { userPlan } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
   const [simuladoResult, setSimuladoResult] = useState<GeneratePersonalizedSimuladoOutput | null>(null);
   const [simuladoState, setSimuladoState] = useState<SimuladoState | null>(null);
@@ -90,9 +94,12 @@ export default function SimuladosPage() {
     setSimuladoState(prev => prev ? ({ ...prev, isFinished: true, score: currentScore }) : null);
   }
 
+  if (!hasAccess(userPlan, 'simulados-personalizados')) {
+    return <AccessDenied featureName="Simulados Personalizados" />;
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-6">
       <Card>
         <CardHeader>
           <CardTitle className="font-headline text-3xl font-bold">Simulados Personalizados</CardTitle>
@@ -242,7 +249,7 @@ export default function SimuladosPage() {
         </Card>
       )}
 
-      {simuladoResult && simuladoState?.isFinished && (
+      {simuladoResult && simuladoState?.isFinished && hasAccess(userPlan, 'relatorios-inteligentes-basico') && (
         <Card className="bg-accent/20 border-accent">
           <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2"><FileText /> Resumo de Desempenho da IA</CardTitle>

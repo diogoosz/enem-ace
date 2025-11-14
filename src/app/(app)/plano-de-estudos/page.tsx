@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -6,13 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { gerarPlanoDeEstudoSemanal } from '@/ai/flows/plano-estudo-semanal-ia';
+import { useAuthContext } from '@/components/auth/auth-provider';
+import { hasAccess } from '@/lib/subscriptions';
+import { AccessDenied } from '@/components/auth/access-denied';
 
 export default function PlanoDeEstudosPage() {
+  const { userPlan } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
   const [plano, setPlano] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Mock de histórico para demonstração
   const historicoDesempenho = `
     - Matemática: 15 acertos de 20 questões. Dificuldade maior em geometria.
     - Física: 10 acertos de 20 questões. Dificuldade em cinemática e leis de Newton.
@@ -37,9 +41,13 @@ export default function PlanoDeEstudosPage() {
       setIsLoading(false);
     }
   }
+  
+  if (!hasAccess(userPlan, 'plano-de-estudos')) {
+    return <AccessDenied featureName="Plano de Estudos Semanal" />;
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-6">
       <Card>
         <CardHeader>
           <CardTitle className="font-headline text-3xl font-bold">Plano de Estudos Semanal</CardTitle>

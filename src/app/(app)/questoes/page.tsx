@@ -1,7 +1,11 @@
+
 "use client";
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import type { Question } from '@/lib/questions';
 import { questions } from '@/lib/questions';
 import { Button } from '@/components/ui/button';
@@ -10,13 +14,23 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
-import { CheckCircle, XCircle, Bot, Loader2, Sparkles, Filter } from 'lucide-react';
+import { CheckCircle, XCircle, Bot, Loader2, Sparkles, Filter, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { iaFeedbackQuestao } from '@/ai/flows/ia-feedback-questao';
 import { generateDetailedExplanation } from '@/ai/flows/explicacao-detalhada-ia';
 import type { IAFeedbackQuestaoOutput } from '@/ai/flows/ia-feedback-questao';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
+import { useAuthContext } from '@/components/auth/auth-provider';
+import { hasAccess } from '@/lib/subscriptions';
+import { AccessDenied } from '@/components/auth/access-denied';
+
+
+const filterSchema = z.object({
+  subject: z.enum(['Matemática', 'Física', 'Biologia']),
+  difficulty: z.enum(['Fácil', 'Médio', 'Difícil', 'Todas']),
+});
 
 type QuestionState = {
   selectedAnswer?: string;
@@ -26,30 +40,34 @@ type QuestionState = {
   isGettingDetails: boolean;
 };
 
-type Subject = 'Matemática' | 'Física' | 'Biologia';
-type Difficulty = 'Fácil' | 'Médio' | 'Difícil' | 'Todas';
-
 export default function QuestoesPage() {
+  const { userPlan } = useAuthContext();
   const [questionStates, setQuestionStates] = useState<Record<number, QuestionState>>({});
-  const [selectedSubject, setSelectedSubject] = useState<Subject>('Matemática');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('Todas');
   const [filteredQuestions, setFilteredQuestions] = useState<Question[] | null>(null);
 
   const { toast } = useToast();
+
+  const form = useForm<z.infer<typeof filterSchema>>({
+    resolver: zodResolver(filterSchema),
+    defaultValues: {
+      subject: 'Matemática',
+      difficulty: 'Todas',
+    },
+  });
+
+  function onSubmit(values: z.infer<typeof filterSchema>) {
+    let newFilteredQuestions = questions.filter(q => q.subject === values.subject);
+    if (values.difficulty !== 'Todas') {
+      newFilteredQuestions = newFilteredQuestions.filter(q => q.difficulty === values.difficulty);
+    }
+    setFilteredQuestions(newFilteredQuestions);
+  }
 
   const handleAnswerChange = (questionId: number, answer: string) => {
     setQuestionStates(prev => ({
       ...prev,
       [questionId]: { ...prev[questionId], selectedAnswer: answer },
     }));
-  };
-
-  const handleFilter = () => {
-    let newFilteredQuestions = questions.filter(q => q.subject === selectedSubject);
-    if (selectedDifficulty !== 'Todas') {
-      newFilteredQuestions = newFilteredQuestions.filter(q => q.difficulty === selectedDifficulty);
-    }
-    setFilteredQuestions(newFilteredQuestions);
   };
 
   const handleSubmit = async (question: Question) => {
@@ -70,7 +88,7 @@ export default function QuestoesPage() {
         question: question.statement,
         answer: state.selectedAnswer,
         correctAnswer: question.correctAnswer,
-        explanationType: 'concise',
+        explanationType: hasAccess(userPlan, 'explicacoes-detalhadas') ? 'detailed' : 'concise',
       });
       setQuestionStates(prev => ({ ...prev, [question.id]: { ...prev[question.id], feedback, isSubmitting: false } }));
     } catch (error) {
@@ -85,6 +103,15 @@ export default function QuestoesPage() {
   };
 
   const handleGetDetailedExplanation = async (question: Question) => {
+    if (!hasAccess(userPlan, 'explicacoes-detalhadas')) {
+      toast({
+        title: 'Acesso Negado',
+        description: 'Faça upgrade do seu plano para acessar explicações detalhadas.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const state = questionStates[question.id];
     if (!state?.selectedAnswer) return;
 
@@ -108,63 +135,81 @@ export default function QuestoesPage() {
       setQuestionStates(prev => ({ ...prev, [question.id]: { ...state, isGettingDetails: false } }));
     }
   };
-  
+
+  if (!hasAccess(userPlan, 'questoes')) {
+    return <AccessDenied featureName="Questões" />;
+  }
+
   if (!filteredQuestions) {
     return (
-        <div className="flex justify-center items-center h-full">
+        <div className="flex justify-center items-center h-full p-4">
             <Card className="w-full max-w-md">
                 <CardHeader>
                     <CardTitle className="font-headline text-2xl">Filtrar Questões</CardTitle>
                     <CardDescription>Escolha a matéria e a dificuldade para começar a praticar.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label>Matéria</Label>
-                        <Select value={selectedSubject} onValueChange={(value: Subject) => setSelectedSubject(value)}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Selecione a matéria" />
-                            </SelectTrigger>
-                            <SelectContent>
+                <CardContent>
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="subject"
+                        render={({ field }) => (
+                          <FormItem>
+                            <Label>Matéria</Label>
+                             <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger><SelectValue placeholder="Selecione a matéria" /></SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
                                 <SelectItem value="Matemática">Matemática</SelectItem>
                                 <SelectItem value="Física">Física</SelectItem>
                                 <SelectItem value="Biologia">Biologia</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Dificuldade</Label>
-                        <Select value={selectedDifficulty} onValueChange={(value: Difficulty) => setSelectedDifficulty(value)}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Selecione a dificuldade" />
-                            </SelectTrigger>
-                            <SelectContent>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
+                       <FormField
+                        control={form.control}
+                        name="difficulty"
+                        render={({ field }) => (
+                          <FormItem>
+                            <Label>Dificuldade</Label>
+                             <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger><SelectValue placeholder="Selecione a dificuldade" /></SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
                                 <SelectItem value="Todas">Todas</SelectItem>
                                 <SelectItem value="Fácil">Fácil</SelectItem>
                                 <SelectItem value="Médio">Médio</SelectItem>
                                 <SelectItem value="Difícil">Difícil</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
+                      <Button type="submit" className="w-full">
+                          <Filter className="mr-2 h-4 w-4" />
+                          Ver Questões
+                      </Button>
+                    </form>
+                  </Form>
                 </CardContent>
-                <CardFooter>
-                    <Button className="w-full" onClick={handleFilter}>
-                        <Filter className="mr-2 h-4 w-4" />
-                        Ver Questões
-                    </Button>
-                </CardFooter>
             </Card>
         </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-6">
         <Button variant="outline" onClick={() => setFilteredQuestions(null)}>
             <Filter className="mr-2 h-4 w-4" />
             Alterar Filtros
         </Button>
 
-      <h1 className="font-headline text-3xl font-bold">Questões de {selectedSubject}</h1>
+      <h1 className="font-headline text-3xl font-bold">Questões de {form.getValues('subject')}</h1>
 
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
         {filteredQuestions.map(question => {
@@ -244,6 +289,7 @@ export default function QuestoesPage() {
                      <Dialog>
                       <DialogTrigger asChild>
                         <Button variant="outline" onClick={() => !state.detailedExplanation && handleGetDetailedExplanation(question)}>
+                          {!hasAccess(userPlan, 'explicacoes-detalhadas') && <Lock className="mr-2 h-4 w-4 text-amber-500" />}
                           <Sparkles className="mr-2 h-4 w-4" />
                           Ver Explicação Detalhada da IA
                         </Button>
@@ -281,5 +327,3 @@ export default function QuestoesPage() {
     </div>
   );
 }
-
-    

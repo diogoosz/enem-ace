@@ -1,10 +1,10 @@
+
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, FileText, BarChart3, Calendar, Edit, Target, Lightbulb, TrendingUp, BotMessageSquare } from "lucide-react";
+import { BookOpen, FileText, BarChart3, Calendar, Edit, Target, Lightbulb, TrendingUp, Gem } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import {
   SidebarMenu,
   SidebarMenuItem,
@@ -20,6 +20,7 @@ const navItems = [
   { href: "/relatorios", icon: BarChart3, label: "Relatórios" },
   { href: "/evolucao", icon: TrendingUp, label: "Evolução" },
   { href: "/questoes-extras", icon: Lightbulb, label: "Questões Extras" },
+  { href: "/planos", icon: Gem, label: "Planos" },
 ];
 
 export function SidebarNav() {

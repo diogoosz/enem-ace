@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -6,8 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, Sparkles, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { suggestDailyGoals } from '@/ai/flows/sugestao-metas-diarias-ia';
+import { useAuthContext } from '@/components/auth/auth-provider';
+import { hasAccess } from '@/lib/subscriptions';
+import { AccessDenied } from '@/components/auth/access-denied';
 
 export default function MetasPage() {
+  const { userPlan } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
   const [goals, setGoals] = useState<string[] | null>(null);
   const { toast } = useToast();
@@ -37,8 +42,12 @@ export default function MetasPage() {
     }
   }
 
+  if (!hasAccess(userPlan, 'metas-diarias')) {
+    return <AccessDenied featureName="Metas Diárias" />;
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-6">
       <Card>
         <CardHeader>
           <CardTitle className="font-headline text-3xl font-bold">Metas Diárias com IA</CardTitle>

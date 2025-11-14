@@ -1,13 +1,18 @@
+
 "use client";
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Sparkles, Bot } from 'lucide-react';
+import { Loader2, Sparkles, Bot, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateIntelligentReport } from '@/ai/flows/relatorios-inteligentes-ia';
+import { useAuthContext } from '@/components/auth/auth-provider';
+import { hasAccess } from '@/lib/subscriptions';
+import { AccessDenied } from '@/components/auth/access-denied';
 
 export default function RelatoriosPage() {
+  const { userPlan } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
   const [report, setReport] = useState<string | null>(null);
   const { toast } = useToast();
@@ -40,8 +45,14 @@ export default function RelatoriosPage() {
     }
   }
 
+  if (!hasAccess(userPlan, 'relatorios-inteligentes-basico')) {
+    return <AccessDenied featureName="Relatórios Inteligentes" />;
+  }
+
+  const canGenerateFullReport = hasAccess(userPlan, 'evolucao-completa'); // Premium has full reports
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-6">
       <Card>
         <CardHeader>
           <CardTitle className="font-headline text-3xl font-bold">Relatórios Inteligentes</CardTitle>
@@ -52,8 +63,13 @@ export default function RelatoriosPage() {
         <CardContent>
           <Button onClick={handleGenerateReport} disabled={isLoading}>
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-            {report ? 'Gerar Novo Relatório' : 'Gerar Relatório Inteligente'}
+            {report ? 'Gerar Novo Relatório' : `Gerar Relatório ${canGenerateFullReport ? 'Completo' : 'Básico'}`}
           </Button>
+          {!canGenerateFullReport && (
+            <p className="text-sm text-amber-600 mt-2 flex items-center gap-2">
+              <Lock className="h-4 w-4" /> Faça upgrade para o plano Premium para relatórios mais detalhados.
+            </p>
+          )}
         </CardContent>
       </Card>
 
