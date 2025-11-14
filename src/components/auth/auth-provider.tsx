@@ -32,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    setIsDataLoading(true); // Start loading user data
     const userDocRef = doc(firestore, 'users', user.uid);
     const unsubscribe = onSnapshot(userDocRef, (doc) => {
       if (doc.exists()) {

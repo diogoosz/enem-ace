@@ -14,7 +14,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
-import { CheckCircle, XCircle, Bot, Loader2, Sparkles, Filter, Lock } from 'lucide-react';
+import { CheckCircle, XCircle, Bot, Loader2, Sparkles, Filter, Lock, BrainCircuit, Atom, Dna } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { iaFeedbackQuestao } from '@/ai/flows/ia-feedback-questao';
 import { generateDetailedExplanation } from '@/ai/flows/explicacao-detalhada-ia';
@@ -300,7 +300,7 @@ export default function QuestoesPage() {
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-[625px]">
                         <DialogHeader>
-                          <DialogTitle className="font-headline text-2xl">Análise da Questão {question.id}</DialogTitle>
+                          <DialogTitle>Análise da Questão {question.id}</DialogTitle>
                           <DialogDescription>
                             A IA analisou a questão e sua resposta. Veja o passo a passo e dicas de estudo.
                           </DialogDescription>
