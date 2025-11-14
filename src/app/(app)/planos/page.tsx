@@ -10,7 +10,7 @@ import { useAuthContext } from '@/components/auth/auth-provider';
 import type { Plan } from '@/lib/subscriptions';
 import { allFeatures, plans, getPriceIdForPlan } from '@/lib/subscriptions';
 import { useFirebase } from '@/firebase';
-import { doc, setDoc, onSnapshot, collection } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot, collection, addDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -40,13 +40,13 @@ export default function PlanosPage() {
       }
       
       const checkoutSessionRef = collection(firestore, 'customers', user.uid, 'checkout_sessions');
-      const docRef = await setDoc(doc(checkoutSessionRef), {
+      const newDocRef = await addDoc(checkoutSessionRef, {
         price: priceId,
         success_url: window.location.origin + '/questoes',
         cancel_url: window.location.origin + '/planos',
       });
 
-      onSnapshot(doc(checkoutSessionRef, docRef.id), (snap) => {
+      onSnapshot(newDocRef, (snap) => {
         const { error, url } = snap.data() as { error?: { message: string }; url?: string; };
         if (error) {
           toast({
