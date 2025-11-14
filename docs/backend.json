@@ -1,0 +1,393 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the ENEM Ace application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "User's full name."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "subscriptionId": {
+          "type": "string",
+          "description": "Reference to the Subscription plan the user is subscribed to. (Relationship: User 1:1 Subscription)"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "subscriptionId"
+      ]
+    },
+    "Subscription": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Subscription",
+      "type": "object",
+      "description": "Represents a subscription plan.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the subscription plan."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the subscription plan (e.g., Basic, Standard, Premium)."
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the subscription plan."
+        },
+        "features": {
+          "type": "array",
+          "description": "A list of features included in the subscription plan.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "price",
+        "features"
+      ]
+    },
+    "Question": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Question",
+      "type": "object",
+      "description": "Represents a question in the ENEM Ace application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the question entity."
+        },
+        "subject": {
+          "type": "string",
+          "description": "Subject of the question (e.g., Matemática, Física, Química)."
+        },
+        "difficulty": {
+          "type": "string",
+          "description": "Difficulty level of the question (e.g., Fácil, Médio, Difícil)."
+        },
+        "content": {
+          "type": "string",
+          "description": "The question text."
+        },
+        "correctAnswer": {
+          "type": "string",
+          "description": "The correct answer to the question."
+        },
+        "explanation": {
+          "type": "string",
+          "description": "Explanation of the correct answer."
+        }
+      },
+      "required": [
+        "id",
+        "subject",
+        "difficulty",
+        "content",
+        "correctAnswer",
+        "explanation"
+      ]
+    },
+    "UserQuestion": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserQuestion",
+      "type": "object",
+      "description": "Represents a user's interaction with a specific question.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user question entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N UserQuestion)"
+        },
+        "questionId": {
+          "type": "string",
+          "description": "Reference to Question. (Relationship: Question 1:N UserQuestion)"
+        },
+        "userAnswer": {
+          "type": "string",
+          "description": "The answer given by the user."
+        },
+        "isCorrect": {
+          "type": "boolean",
+          "description": "Indicates whether the user's answer was correct."
+        },
+        "answeredAt": {
+          "type": "string",
+          "description": "Timestamp of when the question was answered.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "questionId",
+        "userAnswer",
+        "isCorrect",
+        "answeredAt"
+      ]
+    },
+    "Essay": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Essay",
+      "type": "object",
+      "description": "Represents an essay written by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the essay entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Essay)"
+        },
+        "topic": {
+          "type": "string",
+          "description": "The topic of the essay."
+        },
+        "content": {
+          "type": "string",
+          "description": "The content of the essay."
+        },
+        "competency1": {
+          "type": "number",
+          "description": "Score for Competency 1 (norma culta)."
+        },
+        "competency2": {
+          "type": "number",
+          "description": "Score for Competency 2 (compreensão do tema)."
+        },
+        "competency3": {
+          "type": "number",
+          "description": "Score for Competency 3 (argumentação)."
+        },
+        "competency4": {
+          "type": "number",
+          "description": "Score for Competency 4 (coesão e coerência)."
+        },
+        "competency5": {
+          "type": "number",
+          "description": "Score for Competency 5 (proposta de intervenção)."
+        },
+        "feedback": {
+          "type": "string",
+          "description": "Feedback from the AI on the essay."
+        },
+        "submittedAt": {
+          "type": "string",
+          "description": "Timestamp of when the essay was submitted.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "topic",
+        "content",
+        "competency1",
+        "competency2",
+        "competency3",
+        "competency4",
+        "competency5",
+        "feedback",
+        "submittedAt"
+      ]
+    },
+    "GeneratedQuestion": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GeneratedQuestion",
+      "type": "object",
+      "description": "Represents an extra question generated by the IA.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the generated question."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N GeneratedQuestion)"
+        },
+        "subject": {
+          "type": "string",
+          "description": "Subject of the question (e.g., Matemática, Física, Química)."
+        },
+        "difficulty": {
+          "type": "string",
+          "description": "Difficulty level of the question (e.g., Fácil, Médio, Difícil)."
+        },
+        "content": {
+          "type": "string",
+          "description": "The question text."
+        },
+        "alternatives": {
+          "type": "array",
+          "description": "The alternatives to the question",
+          "items": {
+            "type": "string"
+          }
+        },
+        "correctAnswer": {
+          "type": "string",
+          "description": "The correct answer to the question."
+        },
+        "explanation": {
+          "type": "string",
+          "description": "Explanation of the correct answer."
+        },
+        "generatedAt": {
+          "type": "string",
+          "description": "Timestamp of when the question was generated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "subject",
+        "difficulty",
+        "content",
+        "alternatives",
+        "correctAnswer",
+        "explanation",
+        "generatedAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information. Includes denormalized 'subscriptionId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/subscriptions/{subscriptionId}",
+        "definition": {
+          "entityName": "Subscription",
+          "schema": {
+            "$ref": "#/backend/entities/Subscription"
+          },
+          "description": "Stores subscription plan details.",
+          "params": [
+            {
+              "name": "subscriptionId",
+              "description": "The unique identifier for the subscription plan."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/questions/{questionId}",
+        "definition": {
+          "entityName": "Question",
+          "schema": {
+            "$ref": "#/backend/entities/Question"
+          },
+          "description": "Stores question data.",
+          "params": [
+            {
+              "name": "questionId",
+              "description": "The unique identifier for the question."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/userQuestions/{userQuestionId}",
+        "definition": {
+          "entityName": "UserQuestion",
+          "schema": {
+            "$ref": "#/backend/entities/UserQuestion"
+          },
+          "description": "Stores user's interaction with a specific question.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "userQuestionId",
+              "description": "The unique identifier for the user question."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/essays/{essayId}",
+        "definition": {
+          "entityName": "Essay",
+          "schema": {
+            "$ref": "#/backend/entities/Essay"
+          },
+          "description": "Stores essays written by a user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "essayId",
+              "description": "The unique identifier for the essay."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/generatedQuestions/{generatedQuestionId}",
+        "definition": {
+          "entityName": "GeneratedQuestion",
+          "schema": {
+            "$ref": "#/backend/entities/GeneratedQuestion"
+          },
+          "description": "Stores extra question generated by the IA for the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "generatedQuestionId",
+              "description": "The unique identifier for the generated question."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support user authentication, subscription-based access control, and the various features of the ENEM Ace application. The structure prioritizes authorization independence by denormalizing the subscription ID into user-owned data, eliminating the need for `get()` calls in security rules. This allows atomic operations and simplifies debugging. The structure also adheres to structural segregation, ensuring that each collection has a homogeneous security posture.\n\nAuthorization Independence is achieved by storing the `subscriptionId` directly within the `/users/{userId}` document. This denormalization is crucial; without it, security rules would need to perform costly `get()` operations to verify a user's subscription level when accessing data such as questions, essays, or generated questions. By denormalizing, access control can be enforced solely based on the current user's `subscriptionId` and the document being accessed, making the system more efficient and robust.\n\nThe structure supports QAPs (Rules are not Filters) by leveraging structural segregation. User-specific data, such as `UserQuestion` history, `Essays`, and `GeneratedQuestions`, are stored in subcollections under the `/users/{userId}` path. This allows security rules to efficiently control access to these resources based on the user ID in the path, without needing to filter documents based on user-specific data. The `/subscriptions` collection is public read only, enabling clients to fetch subscription details.\n\nAccess Modeling follows consistent patterns:\n\n*   Private Data: The `/users/{userId}` collection exemplifies path-based ownership, ensuring that only the authenticated user can access their profile information.\n*   User-Owned Data: Subcollections like `/users/{userId}/userQuestions` and `/users/{userId}/essays` represent the `User 1:N Entity` relationship, providing a secure and efficient way to manage user-specific data.\n\nThis design promotes security, scalability, and ease of debugging, aligning with the core design principles and strategy mandates."
+  }
+}

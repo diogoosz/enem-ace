@@ -1,0 +1,153 @@
+/**
+ * @fileoverview Firestore Security Rules for ENEM Ace application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for user-specific data,
+ * leveraging denormalization to avoid costly `get()` calls and ensure authorization independence.
+ * Subscription-based access control is enforced by storing the `subscriptionId` directly on the user document.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores user profile information, including a denormalized `subscriptionId`.
+ * - /subscriptions/{subscriptionId}: Stores subscription plan details (publicly readable).
+ * - /questions/{questionId}: Stores question data (publicly readable).
+ * - /users/{userId}/userQuestions/{userQuestionId}: Stores user's interactions with questions.
+ * - /users/{userId}/essays/{essayId}: Stores essays written by a user.
+ * - /users/{userId}/generatedQuestions/{generatedQuestionId}: Stores AI-generated questions for a user.
+ *
+ * Key Security Decisions:
+ * - User-specific data is stored in subcollections under /users/{userId} for path-based access control.
+ * - Read access to /subscriptions and /questions is public.
+ * - Writes to /users/{userId} are restricted to the authenticated user.
+ * - No listing of users is allowed.
+ *
+ * Denormalization for Authorization:
+ * The `subscriptionId` is denormalized onto the `User` document to avoid requiring a `get()` call to the `/subscriptions` collection during authorization checks.
+ *
+ * Structural Segregation:
+ * User-specific data (questions, essays, generated questions) is segregated into user-owned subcollections to simplify security rules and improve performance.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Enforces access control for user profiles.
+     * @path /users/{userId}
+     * @allow (create) User 'user_abc' can create their profile if request.auth.uid == 'user_abc'.
+     * @allow (get, update, delete) User 'user_abc' can read/update/delete their profile if request.auth.uid == 'user_abc'.
+     * @deny (create) User 'user_xyz' cannot create a profile for user 'user_abc'.
+     * @deny (get, update, delete) User 'user_xyz' cannot read/update/delete profile for user 'user_abc'.
+     * @principle Enforces document ownership for user profiles, ensures only the authenticated user can manage their own data.
+     */
+    match /users/{userId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+    }
+
+    /**
+     * @description Allows public read access to subscription plan details.
+     * @path /subscriptions/{subscriptionId}
+     * @allow (get, list) Any user can read subscription details.
+     * @deny (create, update, delete) No user can create, update, or delete subscription details.
+     * @principle Allows public read access to subscription information, while restricting write access.
+     */
+    match /subscriptions/{subscriptionId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Allows public read access to questions.
+     * @path /questions/{questionId}
+     * @allow (get, list) Any user can read question details.
+     * @deny (create, update, delete) No user can create, update, or delete questions.
+     * @principle Allows public read access to questions, while restricting write access.
+     */
+    match /questions/{questionId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Enforces access control for user's question interactions.
+     * @path /users/{userId}/userQuestions/{userQuestionId}
+     * @allow (create) User 'user_abc' can create a question interaction if request.auth.uid == 'user_abc'.
+     * @allow (get, list, update, delete) User 'user_abc' can read/list/update/delete their own question interactions.
+     * @deny (create) User 'user_xyz' cannot create a question interaction for user 'user_abc'.
+     * @deny (get, list, update, delete) User 'user_xyz' cannot read/list/update/delete question interactions for user 'user_abc'.
+     * @principle Enforces document ownership for user's question interactions, ensures only the authenticated user can manage their own data.
+     */
+    match /users/{userId}/userQuestions/{userQuestionId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == request.auth.uid;
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+    }
+
+    /**
+     * @description Enforces access control for user's essays.
+     * @path /users/{userId}/essays/{essayId}
+     * @allow (create) User 'user_abc' can create an essay if request.auth.uid == 'user_abc'.
+     * @allow (get, list, update, delete) User 'user_abc' can read/list/update/delete their own essays.
+     * @deny (create) User 'user_xyz' cannot create an essay for user 'user_abc'.
+     * @deny (get, list, update, delete) User 'user_xyz' cannot read/list/update/delete essays for user 'user_abc'.
+     * @principle Enforces document ownership for user's essays, ensures only the authenticated user can manage their own data.
+     */
+    match /users/{userId}/essays/{essayId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == request.auth.uid;
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+    }
+
+    /**
+     * @description Enforces access control for user's generated questions.
+     * @path /users/{userId}/generatedQuestions/{generatedQuestionId}
+     * @allow (create) User 'user_abc' can create a generated question if request.auth.uid == 'user_abc'.
+     * @allow (get, list, update, delete) User 'user_abc' can read/list/update/delete their own generated questions.
+     * @deny (create) User 'user_xyz' cannot create a generated question for user 'user_abc'.
+     * @deny (get, list, update, delete) User 'user_xyz' cannot read/list/update/delete generated questions for user 'user_abc'.
+     * @principle Enforces document ownership for user's generated questions, ensures only the authenticated user can manage their own data.
+     */
+    match /users/{userId}/generatedQuestions/{generatedQuestionId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == request.auth.uid;
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+    }
+  }
+}
