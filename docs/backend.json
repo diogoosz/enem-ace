@@ -18,6 +18,14 @@
         "stripeId": {
           "type": "string",
           "description": "The user's Stripe Customer ID."
+        },
+        "subscriptionName": {
+          "type": "string",
+          "description": "The name of the user's active plan (e.g., Basico, Premium)."
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the user's subscription (e.g., active, trialing, canceled)."
         }
       },
       "required": [
@@ -216,28 +224,28 @@
         "description": "Stores user profile information and links to Stripe customer data."
       },
       {
-        "path": "/subscriptions",
+        "path": "/products",
         "schema": {
           "$ref": "#/entities/Subscription"
         },
         "description": "Stores details about the available subscription plans."
       },
       {
-        "path": "/users/{userId}/userQuestions",
+        "path": "/customers/{userId}/userQuestions",
         "schema": {
           "$ref": "#/entities/UserQuestion"
         },
         "description": "Stores user's interaction with a specific question."
       },
       {
-        "path": "/users/{userId}/essays",
+        "path": "/customers/{userId}/essays",
         "schema": {
           "$ref": "#/entities/Essay"
         },
         "description": "Stores essays written by a user."
       },
       {
-        "path": "/users/{userId}/generatedQuestions",
+        "path": "/customers/{userId}/generatedQuestions",
         "schema": {
           "$ref": "#/entities/GeneratedQuestion"
         },

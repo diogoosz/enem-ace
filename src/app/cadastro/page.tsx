@@ -57,10 +57,11 @@ export default function CadastroPage() {
 
       await updateProfile(user, { displayName: values.name });
       
-      const userDocRef = doc(firestore, 'users', user.uid);
-      await setDoc(userDocRef, {
+      // Padronizado para a coleção 'customers'
+      const customerDocRef = doc(firestore, 'customers', user.uid);
+      await setDoc(customerDocRef, {
         email: values.email,
-        name: values.name
+        name: values.name,
       });
       
       await sendEmailVerification(user);

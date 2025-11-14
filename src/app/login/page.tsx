@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { useAuth, useFirestore } from '@/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 
 import { Button } from '@/components/ui/button';
@@ -79,28 +79,24 @@ export default function LoginPage() {
         return;
       }
 
-      const userDocRef = doc(firestore, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
+      // Padronizado para a coleção 'customers'
+      const customerDocRef = doc(firestore, 'customers', user.uid);
+      const customerDoc = await getDoc(customerDocRef);
 
-      if (!userDoc.exists() || !userDoc.data()?.subscriptionName) {
-        await setDoc(userDocRef, {
-          name: user.displayName || 'Novo Usuário',
-          email: user.email,
-          subscriptionId: null,
-          subscriptionName: null,
-        }, { merge: true });
-        
-        toast({
-          title: 'Bem-vindo(a) de volta!',
-          description: 'Escolha seu plano para começar a estudar.',
-        });
-        router.push('/planos');
-      } else {
+      // Se o usuário tem um plano ativo, vai para as questões.
+      // Se não tem (documento não existe ou não tem subscriptionName), vai para a página de planos.
+      if (customerDoc.exists() && customerDoc.data()?.subscriptionName) {
          toast({
           title: 'Login realizado com sucesso!',
           description: 'Bem-vindo de volta!',
         });
         router.push('/questoes');
+      } else {
+        toast({
+          title: 'Bem-vindo(a) de volta!',
+          description: 'Escolha seu plano para começar a estudar.',
+        });
+        router.push('/planos');
       }
       
     } catch (error: any) {
@@ -115,6 +111,7 @@ export default function LoginPage() {
       });
       console.error(error);
     } finally {
+      // Apenas para o loading se o alerta de verificação não for mostrado
       if (!showVerificationAlert) {
          setIsLoading(false);
       }

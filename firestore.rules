@@ -3,21 +3,42 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
   
-    // Users can only read and write to their own document.
-    match /users/{userId} {
+    // Os dados dos clientes só podem ser lidos e escritos pelo próprio usuário.
+    match /customers/{userId} {
       allow read, update, delete: if request.auth.uid == userId;
       allow create: if request.auth.uid != null;
       
-      // Users can only read and write their own data in subcollections
+      // Usuários podem criar sessões de checkout para si mesmos.
+      match /checkout_sessions/{sessionId} {
+        allow create: if request.auth.uid == userId;
+        allow read, update, delete: if false; // Ninguém pode ler/alterar depois de criado
+      }
+      
+      // As subscrições e pagamentos são gerenciados pela extensão do Stripe, não pelos usuários.
+      match /subscriptions/{subscriptionId} {
+        allow read: if request.auth.uid == userId;
+        allow create, update, delete: if false;
+      }
+      match /payments/{paymentId} {
+        allow read: if request.auth.uid == userId;
+        allow create, update, delete: if false;
+      }
+
+      // Garante que outras subcoleções não sejam acessíveis por padrão.
       match /{allPaths=**} {
         allow read, write: if request.auth.uid == userId;
       }
     }
     
-    // Subscription plans are publicly readable
-    match /subscriptions/{subscriptionId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+    // Os detalhes dos produtos e planos são públicos para leitura por qualquer usuário autenticado.
+    match /products/{productId} {
+      allow get: if request.auth != null;
+      allow list, create, update, delete: if false;
+
+      match /prices/{priceId} {
+        allow get: if request.auth != null;
+        allow list, create, update, delete: if false;
+      }
     }
   }
 }
