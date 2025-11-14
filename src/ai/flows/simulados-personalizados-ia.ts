@@ -22,7 +22,7 @@ const GeneratePersonalizedSimuladoInputSchema = z.object({
   numeroQuestoes: z
     .number()
     .min(1)
-    .max(90)
+    .max(10)
     .describe('O número de questões no simulado.'),
 });
 export type GeneratePersonalizedSimuladoInput = z.infer<
@@ -62,27 +62,19 @@ const generateQuestoes = ai.defineTool({
   outputSchema: z.array(QuestaoSchema),
 },
 async (input) => {
-  const questoes: z.infer<typeof QuestaoSchema>[] = [];
-
-    for (let i = 0; i < input.numeroQuestoes; i++) {
-      const { output } = await questaoPrompt(input);
-      if (output) {
-        questoes.push(output);
-      }
-    }
-
-  return questoes;
+    const { output } = await questoesPrompt(input);
+    return output || [];
 });
 
-const questaoPrompt = ai.definePrompt({
-  name: 'questaoPrompt',
+const questoesPrompt = ai.definePrompt({
+  name: 'questoesPrompt',
   input: {
     schema: GeneratePersonalizedSimuladoInputSchema,
   },
   output: {
-    schema: QuestaoSchema,
+    schema: z.array(QuestaoSchema),
   },
-  prompt: `Você é um especialista em criar questões no estilo ENEM. Gere uma questão de múltipla escolha com 5 alternativas sobre a matéria: {{{materia}}}, nível de dificuldade: {{{dificuldade}}}.\n\nA resposta deve incluir o campo \"enunciado\" contendo o enunciado da questão, um campo \"alternativas\" contendo um array de 5 strings com as alternativas, um campo \"respostaCorreta\" contendo a alternativa correta, e um campo \"explicacao\" com uma explicação detalhada da resolução da questão.`,
+  prompt: `Você é um especialista em criar questões no estilo ENEM. Gere um array com {{{numeroQuestoes}}} questões de múltipla escolha com 5 alternativas sobre a matéria: {{{materia}}}, nível de dificuldade: {{{dificuldade}}}.\n\nCada item no array deve ser um objeto contendo o campo \"enunciado\" com o enunciado da questão, um campo \"alternativas\" contendo um array de 5 strings com as alternativas, um campo \"respostaCorreta\" contendo a alternativa correta, e um campo \"explicacao\" com uma explicação detalhada da resolução da questão.`,
 });
 
 const resumoDesempenhoPrompt = ai.definePrompt({
