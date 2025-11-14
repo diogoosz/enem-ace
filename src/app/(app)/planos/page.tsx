@@ -8,9 +8,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { cn } from '@/lib/utils';
 import { useAuthContext } from '@/components/auth/auth-provider';
 import type { Plan } from '@/lib/subscriptions';
-import { allFeatures, plans } from '@/lib/subscriptions';
+import { allFeatures, plans, getPriceIdForPlan } from '@/lib/subscriptions';
 import { useFirebase } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -20,27 +20,48 @@ export default function PlanosPage() {
   const [isLoading, setIsLoading] = useState<Plan | null>(null);
   const { toast } = useToast();
 
-  const handleSubscribe = async (plan: Plan, planId: string) => {
+  const handleSubscribe = async (plan: Plan) => {
     if (!user || !firestore) return;
     setIsLoading(plan);
+
     try {
-      const userDocRef = doc(firestore, 'users', user.uid);
-      await updateDoc(userDocRef, {
-        subscriptionId: planId,
-        subscriptionName: plan,
+      const priceId = getPriceIdForPlan(plan);
+      if (!priceId) {
+        throw new Error('Price ID não encontrado para este plano.');
+      }
+      
+      const checkoutSessionRef = collection(firestore, 'customers', user.uid, 'checkout_sessions');
+      
+      const docRef = await addDoc(checkoutSessionRef, {
+        price: priceId,
+        success_url: window.location.origin + '/questoes',
+        cancel_url: window.location.href,
       });
-      toast({
-        title: 'Plano atualizado!',
-        description: `Agora você está no plano ${plan}.`,
+
+      onSnapshot(docRef, (snap) => {
+        const { error, url } = snap.data() as { error?: { message: string }; url?: string };
+        if (error) {
+          console.error(`An error occurred: ${error.message}`);
+          toast({
+            title: 'Erro no Checkout',
+            description: error.message,
+            variant: 'destructive',
+          });
+          setIsLoading(null);
+        }
+        if (url) {
+          // We have a Stripe Checkout URL, let's redirect.
+          window.location.assign(url);
+        }
       });
+
     } catch (error) {
-      console.error("Error updating plan:", error);
+      console.error("Error creating checkout session:", error);
       toast({
-        title: 'Erro ao atualizar plano',
-        description: 'Não foi possível alterar seu plano. Tente novamente.',
+        title: 'Erro ao iniciar assinatura',
+        description: 'Não foi possível se comunicar com o sistema de pagamento. Tente novamente.',
         variant: 'destructive',
       });
-    } finally {
       setIsLoading(null);
     }
   };
@@ -101,7 +122,7 @@ export default function PlanosPage() {
                 <Button
                   className="w-full"
                   disabled={isCurrentPlan || isLoading !== null}
-                  onClick={() => handleSubscribe(planName, planName.toLowerCase())}
+                  onClick={() => handleSubscribe(planName)}
                 >
                   {isLoading === planName && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {isCurrentPlan ? 'Seu Plano Atual' : `Assinar ${planName}`}

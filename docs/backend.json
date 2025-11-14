@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -14,16 +15,15 @@
           "description": "User's email address.",
           "format": "email"
         },
-        "subscriptionId": {
+        "stripeId": {
           "type": "string",
-          "description": "Reference to the Subscription plan the user is subscribed to."
-        },
-        "subscriptionName": {
-          "type": "string",
-          "description": "Name of the subscription plan."
+          "description": "The user's Stripe Customer ID."
         }
       },
-      "required": ["name", "email", "subscriptionId", "subscriptionName"]
+      "required": [
+        "name",
+        "email"
+      ]
     },
     "Subscription": {
       "title": "Subscription",
@@ -53,7 +53,11 @@
           }
         }
       },
-      "required": ["name", "price", "features"]
+      "required": [
+        "name",
+        "price",
+        "features"
+      ]
     },
     "UserQuestion": {
       "title": "UserQuestion",
@@ -82,7 +86,13 @@
           "format": "date-time"
         }
       },
-      "required": ["userId", "questionId", "userAnswer", "isCorrect", "answeredAt"]
+      "required": [
+        "userId",
+        "questionId",
+        "userAnswer",
+        "isCorrect",
+        "answeredAt"
+      ]
     },
     "Essay": {
       "title": "Essay",
@@ -192,16 +202,18 @@
     }
   },
   "auth": {
-    "providers": ["password"]
+    "providers": [
+      "password"
+    ]
   },
   "firestore": {
     "collections": [
       {
-        "path": "/users/{userId}",
+        "path": "/customers/{userId}",
         "schema": {
           "$ref": "#/entities/User"
         },
-        "description": "Stores user profile information, including their subscription."
+        "description": "Stores user profile information and links to Stripe customer data."
       },
       {
         "path": "/subscriptions",

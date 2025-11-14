@@ -56,27 +56,25 @@ export default function CadastroPage() {
       const user = userCredential.user;
 
       await updateProfile(user, { displayName: values.name });
-      await sendEmailVerification(user);
-
+      
       const userDocRef = doc(firestore, 'users', user.uid);
       await setDoc(userDocRef, {
-        name: values.name,
         email: values.email,
-        subscriptionId: null,
-        subscriptionName: null,
+        name: values.name
       });
+      
+      await sendEmailVerification(user);
       
       toast({
         title: 'Verifique seu e-mail!',
         description: 'Enviamos um link de verificação para o seu e-mail. Por favor, confirme para ativar sua conta.',
       });
       
-      // Redirect to a verification pending page
       router.push('/verificar-email');
 
     } catch (error: any) {
       if (error.code === 'auth/email-already-in-use') {
-        toast({
+         toast({
           title: 'Email já cadastrado',
           description: 'Este email já está em uso. Tente fazer login ou recuperar sua senha.',
           variant: 'destructive',

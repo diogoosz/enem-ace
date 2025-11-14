@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useFirebase } from '@/firebase/provider';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, getDocs } from 'firebase/firestore';
 import type { Plan } from '@/lib/subscriptions';
 import { Loader2 } from 'lucide-react';
 
@@ -32,21 +32,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setIsDataLoading(true); // Start loading user data
-    const userDocRef = doc(firestore, 'users', user.uid);
-    const unsubscribe = onSnapshot(userDocRef, (doc) => {
-      if (doc.exists()) {
-        const data = doc.data();
-        setUserPlan(data.subscriptionName as Plan);
-        setUserName(data.name);
-      } else {
-        setUserPlan(undefined);
-        setUserName(null);
-      }
-      setIsDataLoading(false);
+    setIsDataLoading(true);
+
+    const customerDocRef = doc(firestore, 'customers', user.uid);
+    const unsubscribe = onSnapshot(customerDocRef, (customerDoc) => {
+        const fetchSubscriptions = async () => {
+            if (customerDoc.exists()) {
+                setUserName(customerDoc.data().name || user.displayName);
+                const subscriptionsRef = collection(firestore, 'customers', user.uid, 'subscriptions');
+                const q = query(subscriptionsRef, where("status", "in", ["trialing", "active"]));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    setUserPlan(undefined);
+                } else {
+                    const subscription = querySnapshot.docs[0].data();
+                    const role = subscription.role as Plan;
+                    setUserPlan(role);
+                }
+            } else {
+                setUserName(user.displayName);
+                setUserPlan(undefined);
+            }
+            setIsDataLoading(false);
+        };
+        
+        fetchSubscriptions().catch(error => {
+            console.error("Error fetching user subscriptions:", error);
+            setIsDataLoading(false);
+        });
     }, (error) => {
-      console.error("Error fetching user data:", error);
-      setIsDataLoading(false);
+        console.error("Error fetching customer data:", error);
+        setIsDataLoading(false);
     });
 
     return () => unsubscribe();
@@ -54,14 +71,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isOverallLoading = isAuthLoading || isDataLoading;
   
-  if (isOverallLoading) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <AuthContext.Provider value={{ userName, userPlan, isUserLoading: isOverallLoading }}>
       {children}
@@ -76,5 +85,3 @@ export const useAuthContext = () => {
   }
   return context;
 };
-
-    
