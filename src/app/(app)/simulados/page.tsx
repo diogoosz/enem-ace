@@ -18,7 +18,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 
 const formSchema = z.object({
-  materia: z.enum(['Matemática', 'Física', 'Química', 'Biologia', 'História', 'Geografia', 'Português']),
+  materia: z.enum(['Matemática', 'Física', 'Biologia', 'Química', 'História', 'Geografia', 'Português']),
   dificuldade: z.enum(['Fácil', 'Médio', 'Difícil']),
   numeroQuestoes: z.coerce.number().min(1, 'Mínimo 1 questão').max(10, 'Máximo 10 questões'),
 });
@@ -114,8 +114,8 @@ export default function SimuladosPage() {
                         <SelectContent>
                           <SelectItem value="Matemática">Matemática</SelectItem>
                           <SelectItem value="Física">Física</SelectItem>
-                          <SelectItem value="Química">Química</SelectItem>
                           <SelectItem value="Biologia">Biologia</SelectItem>
+                          <SelectItem value="Química">Química</SelectItem>
                           <SelectItem value="História">História</SelectItem>
                           <SelectItem value="Geografia">Geografia</SelectItem>
                           <SelectItem value="Português">Português</SelectItem>

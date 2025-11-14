@@ -13,7 +13,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const MateriasSchema = z.enum(['Matemática', 'Física', 'Química', 'Biologia', 'História', 'Geografia', 'Português']);
+const MateriasSchema = z.enum(['Matemática', 'Física', 'Biologia', 'Química', 'História', 'Geografia', 'Português']);
 const DificuldadeSchema = z.enum(['Fácil', 'Médio', 'Difícil']);
 
 const GeneratePersonalizedSimuladoInputSchema = z.object({
@@ -62,7 +62,7 @@ const generateQuestoes = ai.defineTool({
   outputSchema: z.array(QuestaoSchema),
 },
 async (input) => {
-  const questoes: QuestaoSchema[] = [];
+  const questoes: z.infer<typeof QuestaoSchema>[] = [];
 
     for (let i = 0; i < input.numeroQuestoes; i++) {
       const { output } = await questaoPrompt(input);
