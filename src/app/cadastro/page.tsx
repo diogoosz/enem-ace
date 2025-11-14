@@ -13,7 +13,7 @@ import { useAuth, useFirestore } from '@/firebase';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -59,7 +59,7 @@ export default function CadastroPage() {
       
       toast({
         title: 'Conta criada com sucesso!',
-        description: 'Seja bem-vindo ao ENEM Ace!',
+        description: 'Seja bem-vindo ao ENEM Ace! Escolha seu plano para começar.',
       });
       router.push('/planos'); // Redirect to plans page after sign up
     } catch (error: any) {
@@ -127,10 +127,7 @@ export default function CadastroPage() {
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
-                     <FormDescription>
-                      Mínimo 6 caracteres.
-                    </FormDescription>
-                    <FormMessage />
+                     <FormMessage />
                   </FormItem>
                 )}
               />
