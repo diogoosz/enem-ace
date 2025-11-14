@@ -7,8 +7,8 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, sendEmailVerification, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import { useAuth, useFirestore } from '@/firebase';
 
 import { Button } from '@/components/ui/button';
@@ -42,15 +42,22 @@ export default function CadastroPage() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!auth || !firestore) {
+      toast({
+        title: 'Erro de inicialização',
+        description: 'Serviços do Firebase não estão disponíveis. Tente novamente mais tarde.',
+        variant: 'destructive',
+      });
+      return;
+    }
     setIsLoading(true);
     try {
-      // Tenta criar o usuário
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
       await updateProfile(user, { displayName: values.name });
+      await sendEmailVerification(user);
 
-      // Cria o documento no Firestore sem plano definido
       const userDocRef = doc(firestore, 'users', user.uid);
       await setDoc(userDocRef, {
         name: values.name,
@@ -60,53 +67,21 @@ export default function CadastroPage() {
       });
       
       toast({
-        title: 'Conta criada com sucesso!',
-        description: 'Seja bem-vindo ao ENEM Ace! Escolha seu plano para começar.',
+        title: 'Verifique seu e-mail!',
+        description: 'Enviamos um link de verificação para o seu e-mail. Por favor, confirme para ativar sua conta.',
       });
-      router.push('/planos');
+      
+      // Redirect to a verification pending page
+      router.push('/verificar-email');
 
     } catch (error: any) {
-      // Se o erro for "email já em uso"
       if (error.code === 'auth/email-already-in-use') {
-        try {
-          // Tenta fazer login para ver se o perfil no DB foi deletado
-          const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-          const user = userCredential.user;
-          const userDocRef = doc(firestore, 'users', user.uid);
-          const userDoc = await getDoc(userDocRef);
-
-          // Se o documento não existe, cria ele e continua
-          if (!userDoc.exists()) {
-             await setDoc(userDocRef, {
-              name: values.name,
-              email: values.email,
-              subscriptionId: null,
-              subscriptionName: null,
-            });
-            await updateProfile(user, { displayName: values.name });
-            toast({
-              title: 'Conta recuperada!',
-              description: 'Recriamos seu perfil. Escolha seu plano para continuar.',
-            });
-            router.push('/planos');
-          } else {
-            // Se o documento existe, o usuário realmente já está cadastrado
-             toast({
-              title: 'Email já cadastrado',
-              description: 'Este email já está em uso. Tente fazer login.',
-              variant: 'destructive',
-            });
-          }
-        } catch (signInError: any) {
-           // Se o login falhar (senha errada, por ex)
-           toast({
-            title: 'Erro no Cadastro',
-            description: 'Este email já está em uso e a senha está incorreta.',
-            variant: 'destructive',
-          });
-        }
+        toast({
+          title: 'Email já cadastrado',
+          description: 'Este email já está em uso. Tente fazer login ou recuperar sua senha.',
+          variant: 'destructive',
+        });
       } else {
-        // Outros erros de criação de conta
         toast({
           title: 'Erro no Cadastro',
           description: 'Ocorreu um erro ao criar sua conta. Tente novamente.',

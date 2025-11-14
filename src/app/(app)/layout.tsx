@@ -30,11 +30,14 @@ export default function AppLayout({
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/login');
+    } else if (!isUserLoading && user && !user.emailVerified) {
+      // If email is not verified, redirect to verification page from any app page
+      router.push('/login');
     }
   }, [user, isUserLoading, router]);
 
   useEffect(() => {
-    if (!isUserLoading && user && !userPlan) {
+    if (!isUserLoading && user && user.emailVerified && !userPlan) {
         router.push('/planos');
     }
   }, [user, isUserLoading, userPlan, router]);

@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { useAuth, useFirestore } from '@/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Logo } from '@/components/icons';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const formSchema = z.object({
   email: z.string().email('Por favor, insira um email válido.'),
@@ -27,6 +28,7 @@ const formSchema = z.object({
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [showVerificationAlert, setShowVerificationAlert] = useState(false);
   const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
@@ -40,18 +42,47 @@ export default function LoginPage() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const handleResendVerification = async () => {
     setIsLoading(true);
+    try {
+      const user = auth?.currentUser;
+      if (user) {
+        await sendEmailVerification(user);
+        toast({
+          title: 'E-mail reenviado!',
+          description: 'Um novo link de verificação foi enviado para o seu e-mail.',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Erro ao reenviar',
+        description: 'Não foi possível reenviar o e-mail. Tente novamente mais tarde.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!auth || !firestore) return;
+    setIsLoading(true);
+    setShowVerificationAlert(false);
+
     try {
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
-      // Check if user document exists in Firestore
+      if (!user.emailVerified) {
+        setShowVerificationAlert(true);
+        setIsLoading(false);
+        return;
+      }
+
       const userDocRef = doc(firestore, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
       if (!userDoc.exists() || !userDoc.data()?.subscriptionName) {
-        // If doc doesn't exist or doesn't have a plan, create/update it and go to plans
         await setDoc(userDocRef, {
           name: user.displayName || 'Novo Usuário',
           email: user.email,
@@ -84,7 +115,9 @@ export default function LoginPage() {
       });
       console.error(error);
     } finally {
-      setIsLoading(false);
+      if (!showVerificationAlert) {
+         setIsLoading(false);
+      }
     }
   }
 
@@ -100,6 +133,18 @@ export default function LoginPage() {
           <CardDescription>Insira seu email e senha para continuar.</CardDescription>
         </CardHeader>
         <CardContent>
+          {showVerificationAlert && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTitle className="font-bold">Verifique seu E-mail</AlertTitle>
+              <AlertDescription>
+                Sua conta ainda não foi ativada. Por favor, clique no link que enviamos para o seu e-mail.
+                <Button variant="link" className="p-0 h-auto ml-1" onClick={handleResendVerification} disabled={isLoading}>
+                  Reenviar e-mail
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
