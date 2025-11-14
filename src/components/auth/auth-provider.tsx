@@ -40,7 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUserPlan(data.subscriptionName as Plan);
         setUserName(data.name);
       } else {
-        // This case can happen briefly if the user document hasn't been created yet
         setUserPlan(undefined);
         setUserName(null);
       }
@@ -77,3 +76,5 @@ export const useAuthContext = () => {
   }
   return context;
 };
+
+    

@@ -14,7 +14,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
-import { CheckCircle, XCircle, Bot, Loader2, Sparkles, Filter, Lock, BrainCircuit, Atom, Dna } from 'lucide-react';
+import { CheckCircle, XCircle, Bot, Loader2, Sparkles, Filter, Lock, BrainCircuit, Atom, Dna, TestTube } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { iaFeedbackQuestao } from '@/ai/flows/ia-feedback-questao';
 import { generateDetailedExplanation } from '@/ai/flows/explicacao-detalhada-ia';
@@ -28,7 +28,7 @@ import { AccessDenied } from '@/components/auth/access-denied';
 
 
 const filterSchema = z.object({
-  subject: z.enum(['Matemática', 'Física', 'Biologia']),
+  subject: z.enum(['Matemática', 'Física', 'Química', 'Biologia']),
   difficulty: z.enum(['Fácil', 'Médio', 'Difícil', 'Todas']),
 });
 
@@ -40,17 +40,32 @@ type QuestionState = {
   isGettingDetails: boolean;
 };
 
+const subjectIcons = {
+  'Matemática': <BrainCircuit className="h-10 w-10 text-primary" />,
+  'Física': <Atom className="h-10 w-10 text-primary" />,
+  'Biologia': <Dna className="h-10 w-10 text-primary" />,
+  'Química': <TestTube className="h-10 w-10 text-primary" />
+};
+
+const subjectDescriptions = {
+  'Matemática': 'Desafie seu raciocínio com questões de álgebra, geometria e muito mais.',
+  'Física': 'Explore os princípios do universo, da mecânica à eletricidade.',
+  'Biologia': 'Mergulhe no mundo da vida, da célula aos ecossistemas.',
+  'Química': 'Entenda a matéria e suas transformações.'
+};
+
+
 export default function QuestoesPage() {
   const { userPlan } = useAuthContext();
   const [questionStates, setQuestionStates] = useState<Record<number, QuestionState>>({});
   const [filteredQuestions, setFilteredQuestions] = useState<Question[] | null>(null);
+  const [selectedSubject, setSelectedSubject] = useState<'Matemática' | 'Física' | 'Biologia' | 'Química' | null>(null);
 
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof filterSchema>>({
     resolver: zodResolver(filterSchema),
     defaultValues: {
-      subject: 'Matemática',
       difficulty: 'Todas',
     },
   });
@@ -144,76 +159,97 @@ export default function QuestoesPage() {
     return <AccessDenied featureName="Questões" />;
   }
 
+  if (!selectedSubject) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-headline text-3xl font-bold">Banco de Questões</CardTitle>
+            <CardDescription>Escolha uma matéria para começar a praticar com questões no estilo ENEM.</CardDescription>
+          </CardHeader>
+        </Card>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {(['Matemática', 'Física', 'Biologia', 'Química'] as const).map(subject => (
+            <Card key={subject} className="flex flex-col">
+              <CardHeader className="items-center text-center">
+                {subjectIcons[subject]}
+                <CardTitle className="font-headline text-2xl mt-4">{subject}</CardTitle>
+              </CardHeader>
+              <CardContent className="flex-grow text-center">
+                <p className="text-muted-foreground">{subjectDescriptions[subject]}</p>
+              </CardContent>
+              <CardFooter>
+                <Button className="w-full" onClick={() => {
+                  setSelectedSubject(subject);
+                  form.setValue('subject', subject);
+                }}>
+                  Praticar {subject}
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   if (!filteredQuestions) {
     return (
-        <div className="flex justify-center items-center h-full p-4">
-            <Card className="w-full max-w-md">
-                <CardHeader>
-                    <CardTitle className="font-headline text-2xl">Filtrar Questões</CardTitle>
-                    <CardDescription>Escolha a matéria e a dificuldade para começar a praticar.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="subject"
-                        render={({ field }) => (
-                          <FormItem>
-                            <Label>Matéria</Label>
-                             <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger><SelectValue placeholder="Selecione a matéria" /></SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Matemática">Matemática</SelectItem>
-                                <SelectItem value="Física">Física</SelectItem>
-                                <SelectItem value="Biologia">Biologia</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )}
-                      />
-                       <FormField
-                        control={form.control}
-                        name="difficulty"
-                        render={({ field }) => (
-                          <FormItem>
-                            <Label>Dificuldade</Label>
-                             <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger><SelectValue placeholder="Selecione a dificuldade" /></SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Todas">Todas</SelectItem>
-                                <SelectItem value="Fácil">Fácil</SelectItem>
-                                <SelectItem value="Médio">Médio</SelectItem>
-                                <SelectItem value="Difícil">Difícil</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )}
-                      />
-                      <Button type="submit" className="w-full">
-                          <Filter className="mr-2 h-4 w-4" />
-                          Ver Questões
-                      </Button>
-                    </form>
-                  </Form>
-                </CardContent>
-            </Card>
-        </div>
+      <div className="flex justify-center items-center h-full p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="font-headline text-2xl">Filtrar Questões de {selectedSubject}</CardTitle>
+            <CardDescription>Escolha a dificuldade para começar.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="difficulty"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Label>Dificuldade</Label>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Selecione a dificuldade" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Todas">Todas</SelectItem>
+                          <SelectItem value="Fácil">Fácil</SelectItem>
+                          <SelectItem value="Médio">Médio</SelectItem>
+                          <SelectItem value="Difícil">Difícil</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+                <div className='flex flex-col sm:flex-row gap-2'>
+                   <Button variant="outline" className="w-full" onClick={() => setSelectedSubject(null)}>
+                      Trocar Matéria
+                  </Button>
+                  <Button type="submit" className="w-full">
+                    <Filter className="mr-2 h-4 w-4" />
+                    Ver Questões
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-4">
         <Button variant="outline" onClick={() => setFilteredQuestions(null)}>
             <Filter className="mr-2 h-4 w-4" />
             Alterar Filtros
         </Button>
-
-      <h1 className="font-headline text-3xl font-bold">Questões de {form.getValues('subject')}</h1>
+        <h1 className="font-headline text-3xl font-bold">Questões de {form.getValues('subject')}</h1>
+      </div>
 
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
         {filteredQuestions.map(question => {
@@ -301,9 +337,9 @@ export default function QuestoesPage() {
                       <DialogContent className="sm:max-w-[625px]">
                         <DialogHeader>
                           <DialogTitle>Análise da Questão {question.id}</DialogTitle>
-                          <DialogDescription>
-                            A IA analisou a questão e sua resposta. Veja o passo a passo e dicas de estudo.
-                          </DialogDescription>
+                           <DialogDescription>
+                             A IA analisou a questão e sua resposta. Veja o passo a passo e dicas de estudo.
+                           </DialogDescription>
                         </DialogHeader>
                         {state.isGettingDetails && (
                           <div className="flex items-center justify-center p-8 space-x-2 text-muted-foreground">
@@ -331,3 +367,5 @@ export default function QuestoesPage() {
     </div>
   );
 }
+
+    
