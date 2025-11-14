@@ -14,7 +14,7 @@ import { generateEnemQuestion } from '@/ai/flows/geracao-questoes-extras-ia';
 import type { GenerateEnemQuestionOutput } from '@/ai/flows/geracao-questoes-extras-ia';
 
 const formSchema = z.object({
-  subject: z.enum(['Matemática', 'Física', 'Química']),
+  subject: z.enum(['Matemática', 'Física', 'Química', 'Biologia', 'História', 'Geografia', 'Português']),
   difficulty: z.enum(['Fácil', 'Médio', 'Difícil']),
 });
 
@@ -74,6 +74,10 @@ export default function QuestoesExtrasPage() {
                           <SelectItem value="Matemática">Matemática</SelectItem>
                           <SelectItem value="Física">Física</SelectItem>
                           <SelectItem value="Química">Química</SelectItem>
+                          <SelectItem value="Biologia">Biologia</SelectItem>
+                          <SelectItem value="História">História</SelectItem>
+                          <SelectItem value="Geografia">Geografia</SelectItem>
+                          <SelectItem value="Português">Português</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CheckCircle, XCircle, Bot, Loader2, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { iaFeedbackQuestao } from '@/ai/flows/ia-feedback-questao';
@@ -25,11 +26,13 @@ type QuestionState = {
   isGettingDetails: boolean;
 };
 
-const subjects = ['Todos', 'Matemática', 'Física', 'Química'];
+const subjects = ['Todos', 'Matemática', 'Física', 'Química', 'Biologia', 'História', 'Geografia', 'Português'];
+const difficulties = ['Todas', 'Fácil', 'Médio', 'Difícil'];
 
 export default function QuestoesPage() {
   const [questionStates, setQuestionStates] = useState<Record<number, QuestionState>>({});
   const [activeTab, setActiveTab] = useState('Todos');
+  const [activeDifficulty, setActiveDifficulty] = useState('Todas');
 
   const { toast } = useToast();
 
@@ -97,17 +100,36 @@ export default function QuestoesPage() {
     }
   };
   
-  const filteredQuestions = questions.filter(q => activeTab === 'Todos' || q.subject === activeTab);
+  const filteredQuestions = questions.filter(q => 
+    (activeTab === 'Todos' || q.subject === activeTab) &&
+    (activeDifficulty === 'Todas' || q.difficulty === activeDifficulty)
+  );
 
   return (
     <div className="space-y-6">
       <h1 className="font-headline text-3xl font-bold">Banco de Questões</h1>
       <p className="text-muted-foreground">
-        Filtre por matéria e teste seus conhecimentos. A IA irá corrigir suas respostas e fornecer explicações.
+        Filtre por matéria e dificuldade e teste seus conhecimentos. A IA irá corrigir suas respostas e fornecer explicações.
       </p>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="w-full sm:w-auto">
+          <Label>Dificuldade</Label>
+          <Select value={activeDifficulty} onValueChange={setActiveDifficulty}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Dificuldade" />
+            </SelectTrigger>
+            <SelectContent>
+              {difficulties.map(difficulty => (
+                <SelectItem key={difficulty} value={difficulty}>{difficulty}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="overflow-x-auto whitespace-nowrap h-auto justify-start w-full">
           {subjects.map(subject => (
             <TabsTrigger key={subject} value={subject}>{subject}</TabsTrigger>
           ))}
@@ -127,11 +149,11 @@ export default function QuestoesPage() {
                         <CardTitle className="font-headline text-xl">Questão {question.id}</CardTitle>
                         <CardDescription>{question.subject} - {question.difficulty}</CardDescription>
                       </div>
-                       <span className={`px-2 py-1 text-xs rounded-full ${
-                        question.difficulty === 'Fácil' ? 'bg-green-100 text-green-800' :
-                        question.difficulty === 'Médio' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
+                       <span className={cn('px-2 py-1 text-xs rounded-full', {
+                        'bg-green-100 text-green-800': question.difficulty === 'Fácil',
+                        'bg-yellow-100 text-yellow-800': question.difficulty === 'Médio',
+                        'bg-red-100 text-red-800': question.difficulty === 'Difícil'
+                       })}>
                         {question.difficulty}
                       </span>
                     </div>
@@ -196,7 +218,7 @@ export default function QuestoesPage() {
                                 <span>Analisando...</span>
                               </div>
                             )}
-                            {state.detailedExplanation && <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: state.detailedExplanation.replace(/\n/g, '<br />') }} />}
+                            {state.detailedExplanation && <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: state.detailedExplanation.replace(/\\n/g, '<br />') }} />}
                           </DialogContent>
                         </Dialog>
                       </div>
@@ -205,6 +227,13 @@ export default function QuestoesPage() {
                 </Card>
               );
             })}
+             {filteredQuestions.length === 0 && (
+                <Card className="md:col-span-1 lg:col-span-2">
+                    <CardContent className="pt-6">
+                        <p className="text-center text-muted-foreground">Nenhuma questão encontrada para os filtros selecionados.</p>
+                    </CardContent>
+                </Card>
+             )}
           </div>
         </TabsContent>
       </Tabs>
