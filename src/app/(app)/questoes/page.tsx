@@ -112,17 +112,17 @@ export default function QuestoesPage() {
                 Escolha uma matéria para começar a testar seus conhecimentos.
             </p>
             <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
-                {Object.keys(subjectConfig).map(subject => {
-                    const SubjectIcon = subjectConfig[subject as Subject].icon;
+                {(Object.keys(subjectConfig) as Subject[]).map(subject => {
+                    const SubjectIcon = subjectConfig[subject].icon;
                     return (
                         <Card 
                             key={subject} 
                             className="flex flex-col justify-between cursor-pointer hover:border-primary hover:shadow-lg transition-all"
-                            onClick={() => setSelectedSubject(subject as Subject)}
+                            onClick={() => setSelectedSubject(subject)}
                         >
                             <CardHeader>
                                 <div className="flex items-center gap-4">
-                                    <SubjectIcon className={`h-10 w-10 ${subjectConfig[subject as Subject].color}`} />
+                                    <SubjectIcon className={`h-10 w-10 ${subjectConfig[subject].color}`} />
                                     <CardTitle className="font-headline text-2xl">{subject}</CardTitle>
                                 </div>
                             </CardHeader>
