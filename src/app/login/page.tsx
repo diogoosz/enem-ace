@@ -50,26 +50,28 @@ export default function LoginPage() {
       const userDocRef = doc(firestore, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
-      if (!userDoc.exists()) {
-        // If doc doesn't exist (e.g., deleted manually), re-create it with defaults
+      if (!userDoc.exists() || !userDoc.data()?.subscriptionName) {
+        // If doc doesn't exist or doesn't have a plan, create/update it and go to plans
         await setDoc(userDocRef, {
           name: user.displayName || 'Novo Usuário',
           email: user.email,
           subscriptionId: 'basico',
           subscriptionName: 'Basico',
-        });
+        }, { merge: true });
+        
         toast({
-          title: 'Perfil recuperado!',
-          description: 'Recriamos seu perfil com o plano básico.',
+          title: 'Bem-vindo(a) de volta!',
+          description: 'Escolha seu plano para começar a estudar.',
         });
+        router.push('/planos');
       } else {
          toast({
           title: 'Login realizado com sucesso!',
           description: 'Bem-vindo de volta!',
         });
+        router.push('/questoes');
       }
-
-      router.push('/questoes');
+      
     } catch (error: any) {
       let description = 'Ocorreu um erro ao fazer login. Tente novamente.';
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
