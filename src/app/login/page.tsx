@@ -8,7 +8,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +28,7 @@ const formSchema = z.object({
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -40,11 +43,32 @@ export default function LoginPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
-      toast({
-        title: 'Login realizado com sucesso!',
-        description: 'Bem-vindo de volta!',
-      });
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
+
+      // Check if user document exists in Firestore
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        // If doc doesn't exist (e.g., deleted manually), re-create it with defaults
+        await setDoc(userDocRef, {
+          name: user.displayName || 'Novo Usuário',
+          email: user.email,
+          subscriptionId: 'basico',
+          subscriptionName: 'Basico',
+        });
+        toast({
+          title: 'Perfil recuperado!',
+          description: 'Recriamos seu perfil com o plano básico.',
+        });
+      } else {
+         toast({
+          title: 'Login realizado com sucesso!',
+          description: 'Bem-vindo de volta!',
+        });
+      }
+
       router.push('/questoes');
     } catch (error: any) {
       let description = 'Ocorreu um erro ao fazer login. Tente novamente.';
