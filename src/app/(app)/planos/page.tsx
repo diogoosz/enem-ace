@@ -8,9 +8,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { cn } from '@/lib/utils';
 import { useAuthContext } from '@/components/auth/auth-provider';
 import type { Plan } from '@/lib/subscriptions';
-import { allFeatures, plans } from '@/lib/subscriptions';
+import { allFeatures, plans, getPriceIdForPlan } from '@/lib/subscriptions';
 import { useFirebase } from '@/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot, collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -34,34 +34,40 @@ export default function PlanosPage() {
     setIsLoading(plan);
 
     try {
-      // Simula a assinatura atualizando o documento do usuário diretamente
-      // Esta é a alteração para evitar a cobrança e o plano Blaze
-      const userDocRef = doc(firestore, 'customers', user.uid);
-      await setDoc(userDocRef, { 
-        name: user.displayName,
-        email: user.email,
-        subscriptionId: `simulated_${plan}_${new Date().getTime()}`,
-        subscriptionName: plan,
-        status: 'active'
-       }, { merge: true });
-
-      toast({
-        title: 'Plano selecionado!',
-        description: `Você agora está no plano ${plan}.`,
+      const priceId = getPriceIdForPlan(plan);
+      if (!priceId) {
+        throw new Error('Price ID não encontrado para o plano selecionado.');
+      }
+      
+      const checkoutSessionRef = collection(firestore, 'customers', user.uid, 'checkout_sessions');
+      const docRef = await setDoc(doc(checkoutSessionRef), {
+        price: priceId,
+        success_url: window.location.origin + '/questoes',
+        cancel_url: window.location.origin + '/planos',
       });
 
-      // Força a atualização do contexto de autenticação recarregando a página ou redirecionando
-      // router.refresh() não é suficiente aqui, precisamos que o AuthProvider recarregue
-      router.push('/questoes'); // Redireciona para a página principal do app
+      onSnapshot(doc(checkoutSessionRef, docRef.id), (snap) => {
+        const { error, url } = snap.data() as { error?: { message: string }; url?: string; };
+        if (error) {
+          toast({
+            title: 'Erro no Pagamento',
+            description: error.message,
+            variant: 'destructive',
+          });
+          setIsLoading(null);
+        }
+        if (url) {
+          router.push(url);
+        }
+      });
       
     } catch (error) {
-      console.error("Error simulating subscription:", error);
+      console.error("Error creating checkout session:", error);
       toast({
-        title: 'Erro ao selecionar plano',
-        description: 'Não foi possível registrar sua escolha. Tente novamente.',
+        title: 'Erro ao iniciar assinatura',
+        description: 'Não foi possível comunicar com o sistema de pagamento. Tente novamente.',
         variant: 'destructive',
       });
-    } finally {
       setIsLoading(null);
     }
   };
