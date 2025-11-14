@@ -8,60 +8,60 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { cn } from '@/lib/utils';
 import { useAuthContext } from '@/components/auth/auth-provider';
 import type { Plan } from '@/lib/subscriptions';
-import { allFeatures, plans, getPriceIdForPlan } from '@/lib/subscriptions';
+import { allFeatures, plans } from '@/lib/subscriptions';
 import { useFirebase } from '@/firebase';
-import { collection, addDoc, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function PlanosPage() {
   const { userPlan } = useAuthContext();
   const { user, firestore } = useFirebase();
   const [isLoading, setIsLoading] = useState<Plan | null>(null);
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleSubscribe = async (plan: Plan) => {
-    if (!user || !firestore) return;
+    if (!user || !firestore) {
+      toast({
+        title: 'Erro',
+        description: 'Usuário não autenticado. Por favor, faça login novamente.',
+        variant: 'destructive',
+      });
+      return;
+    }
     setIsLoading(plan);
 
     try {
-      const priceId = getPriceIdForPlan(plan);
-      if (!priceId) {
-        throw new Error('Price ID não encontrado para este plano.');
-      }
-      
-      const checkoutSessionRef = collection(firestore, 'customers', user.uid, 'checkout_sessions');
-      
-      const docRef = await addDoc(checkoutSessionRef, {
-        price: priceId,
-        success_url: window.location.origin + '/questoes',
-        cancel_url: window.location.href,
-      });
+      // Simula a assinatura atualizando o documento do usuário diretamente
+      // Esta é a alteração para evitar a cobrança e o plano Blaze
+      const userDocRef = doc(firestore, 'customers', user.uid);
+      await setDoc(userDocRef, { 
+        name: user.displayName,
+        email: user.email,
+        subscriptionId: `simulated_${plan}_${new Date().getTime()}`,
+        subscriptionName: plan,
+        status: 'active'
+       }, { merge: true });
 
-      onSnapshot(docRef, (snap) => {
-        const { error, url } = snap.data() as { error?: { message: string }; url?: string };
-        if (error) {
-          console.error(`An error occurred: ${error.message}`);
-          toast({
-            title: 'Erro no Checkout',
-            description: error.message,
-            variant: 'destructive',
-          });
-          setIsLoading(null);
-        }
-        if (url) {
-          // We have a Stripe Checkout URL, let's redirect.
-          window.location.assign(url);
-        }
-      });
-
-    } catch (error) {
-      console.error("Error creating checkout session:", error);
       toast({
-        title: 'Erro ao iniciar assinatura',
-        description: 'Não foi possível se comunicar com o sistema de pagamento. Tente novamente.',
+        title: 'Plano selecionado!',
+        description: `Você agora está no plano ${plan}.`,
+      });
+
+      // Força a atualização do contexto de autenticação recarregando a página ou redirecionando
+      // router.refresh() não é suficiente aqui, precisamos que o AuthProvider recarregue
+      router.push('/questoes'); // Redireciona para a página principal do app
+      
+    } catch (error) {
+      console.error("Error simulating subscription:", error);
+      toast({
+        title: 'Erro ao selecionar plano',
+        description: 'Não foi possível registrar sua escolha. Tente novamente.',
         variant: 'destructive',
       });
+    } finally {
       setIsLoading(null);
     }
   };
@@ -125,7 +125,7 @@ export default function PlanosPage() {
                   onClick={() => handleSubscribe(planName)}
                 >
                   {isLoading === planName && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isCurrentPlan ? 'Seu Plano Atual' : `Assinar ${planName}`}
+                  {isCurrentPlan ? 'Seu Plano Atual' : `Selecionar ${planName}`}
                 </Button>
               </CardFooter>
             </Card>

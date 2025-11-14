@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useFirebase } from '@/firebase/provider';
-import { doc, onSnapshot, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import type { Plan } from '@/lib/subscriptions';
 import { Loader2 } from 'lucide-react';
 
@@ -34,36 +34,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setIsDataLoading(true);
 
+    // No lugar de ouvir a coleção de 'subscriptions', ouvimos o documento 'customers'
     const customerDocRef = doc(firestore, 'customers', user.uid);
     const unsubscribe = onSnapshot(customerDocRef, (customerDoc) => {
-        const fetchSubscriptions = async () => {
-            if (customerDoc.exists()) {
-                setUserName(customerDoc.data().name || user.displayName);
-                const subscriptionsRef = collection(firestore, 'customers', user.uid, 'subscriptions');
-                const q = query(subscriptionsRef, where("status", "in", ["trialing", "active"]));
-                const querySnapshot = await getDocs(q);
+      if (customerDoc.exists()) {
+        const customerData = customerDoc.data();
+        setUserName(customerData.name || user.displayName);
+        // O plano agora está no campo 'subscriptionName' do documento do cliente
+        const plan = customerData.subscriptionName as Plan;
+        const status = customerData.status;
 
-                if (querySnapshot.empty) {
-                    setUserPlan(undefined);
-                } else {
-                    const subscription = querySnapshot.docs[0].data();
-                    const role = subscription.role as Plan;
-                    setUserPlan(role);
-                }
-            } else {
-                setUserName(user.displayName);
-                setUserPlan(undefined);
-            }
-            setIsDataLoading(false);
-        };
-        
-        fetchSubscriptions().catch(error => {
-            console.error("Error fetching user subscriptions:", error);
-            setIsDataLoading(false);
-        });
+        if (status === 'active' || status === 'trialing') {
+          setUserPlan(plan);
+        } else {
+          setUserPlan(undefined);
+        }
+      } else {
+        // Se o documento do cliente não existe, ele não tem plano
+        setUserName(user.displayName);
+        setUserPlan(undefined);
+      }
+      setIsDataLoading(false);
     }, (error) => {
-        console.error("Error fetching customer data:", error);
-        setIsDataLoading(false);
+      console.error("Error fetching customer data:", error);
+      setIsDataLoading(false);
     });
 
     return () => unsubscribe();
