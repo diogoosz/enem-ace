@@ -16,6 +16,7 @@ import { UserMenu } from "@/components/layout/user-menu";
 import { useFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useAuthContext } from "@/components/auth/auth-provider";
 
 export default function AppLayout({
   children,
@@ -23,6 +24,7 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   const { user, isUserLoading } = useFirebase();
+  const { userPlan } = useAuthContext();
   const router = useRouter();
 
   useEffect(() => {
@@ -30,6 +32,12 @@ export default function AppLayout({
       router.push('/login');
     }
   }, [user, isUserLoading, router]);
+
+  useEffect(() => {
+    if (!isUserLoading && user && !userPlan) {
+        router.push('/planos');
+    }
+  }, [user, isUserLoading, userPlan, router]);
 
   return (
     <SidebarProvider>
@@ -50,7 +58,16 @@ export default function AppLayout({
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <main className="flex-1 overflow-y-auto">
+        <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 md:hidden">
+            <SidebarTrigger className="md:hidden"/>
+            <div className="flex items-center gap-2">
+                <Logo className="size-6 text-primary" />
+                <h1 className="font-headline text-lg font-semibold text-primary">
+                ENEM Ace
+                </h1>
+            </div>
+        </header>
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {children}
         </main>
       </SidebarInset>

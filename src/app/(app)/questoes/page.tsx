@@ -136,6 +136,10 @@ export default function QuestoesPage() {
     }
   };
 
+  if (!userPlan) {
+    return null;
+  }
+  
   if (!hasAccess(userPlan, 'questoes')) {
     return <AccessDenied featureName="Questões" />;
   }
@@ -203,7 +207,7 @@ export default function QuestoesPage() {
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
+    <div className="space-y-6">
         <Button variant="outline" onClick={() => setFilteredQuestions(null)}>
             <Filter className="mr-2 h-4 w-4" />
             Alterar Filtros

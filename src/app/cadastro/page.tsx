@@ -50,13 +50,13 @@ export default function CadastroPage() {
 
       await updateProfile(user, { displayName: values.name });
 
-      // Cria o documento no Firestore
+      // Cria o documento no Firestore sem plano definido
       const userDocRef = doc(firestore, 'users', user.uid);
       await setDoc(userDocRef, {
         name: values.name,
         email: values.email,
-        subscriptionId: 'basico',
-        subscriptionName: 'Basico',
+        subscriptionId: null,
+        subscriptionName: null,
       });
       
       toast({
@@ -80,8 +80,8 @@ export default function CadastroPage() {
              await setDoc(userDocRef, {
               name: values.name,
               email: values.email,
-              subscriptionId: 'basico',
-              subscriptionName: 'Basico',
+              subscriptionId: null,
+              subscriptionName: null,
             });
             await updateProfile(user, { displayName: values.name });
             toast({

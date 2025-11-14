@@ -55,8 +55,8 @@ export default function LoginPage() {
         await setDoc(userDocRef, {
           name: user.displayName || 'Novo Usuário',
           email: user.email,
-          subscriptionId: 'basico',
-          subscriptionName: 'Basico',
+          subscriptionId: null,
+          subscriptionName: null,
         }, { merge: true });
         
         toast({
