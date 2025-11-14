@@ -9,14 +9,13 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
-import { CheckCircle, XCircle, Bot, Loader2, Sparkles, ArrowLeft } from 'lucide-react';
+import { CheckCircle, XCircle, Bot, Loader2, Sparkles, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { iaFeedbackQuestao } from '@/ai/flows/ia-feedback-questao';
 import { generateDetailedExplanation } from '@/ai/flows/explicacao-detalhada-ia';
 import type { IAFeedbackQuestaoOutput } from '@/ai/flows/ia-feedback-questao';
 import { cn } from '@/lib/utils';
-import { BookOpen, Atom, Dna } from 'lucide-react';
-
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type QuestionState = {
   selectedAnswer?: string;
@@ -27,16 +26,13 @@ type QuestionState = {
 };
 
 type Subject = 'Matemática' | 'Física' | 'Biologia';
-
-const subjectConfig = {
-  'Matemática': { icon: BookOpen, color: 'text-blue-500' },
-  'Física': { icon: Atom, color: 'text-red-500' },
-  'Biologia': { icon: Dna, color: 'text-green-500' },
-}
+type Difficulty = 'Fácil' | 'Médio' | 'Difícil' | 'Todas';
 
 export default function QuestoesPage() {
   const [questionStates, setQuestionStates] = useState<Record<number, QuestionState>>({});
-  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [selectedSubject, setSelectedSubject] = useState<Subject>('Matemática');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('Todas');
+  const [filteredQuestions, setFilteredQuestions] = useState<Question[] | null>(null);
 
   const { toast } = useToast();
 
@@ -45,6 +41,14 @@ export default function QuestoesPage() {
       ...prev,
       [questionId]: { ...prev[questionId], selectedAnswer: answer },
     }));
+  };
+
+  const handleFilter = () => {
+    let newFilteredQuestions = questions.filter(q => q.subject === selectedSubject);
+    if (selectedDifficulty !== 'Todas') {
+      newFilteredQuestions = newFilteredQuestions.filter(q => q.difficulty === selectedDifficulty);
+    }
+    setFilteredQuestions(newFilteredQuestions);
   };
 
   const handleSubmit = async (question: Question) => {
@@ -104,49 +108,59 @@ export default function QuestoesPage() {
     }
   };
   
-  if (!selectedSubject) {
+  if (!filteredQuestions) {
     return (
-        <div className="space-y-6">
-            <h1 className="font-headline text-3xl font-bold">Banco de Questões</h1>
-            <p className="text-muted-foreground">
-                Escolha uma matéria para começar a testar seus conhecimentos.
-            </p>
-            <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
-                {(Object.keys(subjectConfig) as Subject[]).map(subject => {
-                    const SubjectIcon = subjectConfig[subject].icon;
-                    return (
-                        <Card 
-                            key={subject} 
-                            className="flex flex-col justify-between cursor-pointer hover:border-primary hover:shadow-lg transition-all"
-                            onClick={() => setSelectedSubject(subject)}
-                        >
-                            <CardHeader>
-                                <div className="flex items-center gap-4">
-                                    <SubjectIcon className={`h-10 w-10 ${subjectConfig[subject].color}`} />
-                                    <CardTitle className="font-headline text-2xl">{subject}</CardTitle>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <CardDescription>90 questões de nível ENEM, divididas entre fácil, médio e difícil.</CardDescription>
-                            </CardContent>
-                            <CardFooter>
-                                <Button>Começar a Praticar</Button>
-                            </CardFooter>
-                        </Card>
-                    );
-                })}
-            </div>
+        <div className="flex justify-center items-center h-full">
+            <Card className="w-full max-w-md">
+                <CardHeader>
+                    <CardTitle className="font-headline text-2xl">Filtrar Questões</CardTitle>
+                    <CardDescription>Escolha a matéria e a dificuldade para começar a praticar.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label>Matéria</Label>
+                        <Select value={selectedSubject} onValueChange={(value: Subject) => setSelectedSubject(value)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecione a matéria" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Matemática">Matemática</SelectItem>
+                                <SelectItem value="Física">Física</SelectItem>
+                                <SelectItem value="Biologia">Biologia</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Dificuldade</Label>
+                        <Select value={selectedDifficulty} onValueChange={(value: Difficulty) => setSelectedDifficulty(value)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecione a dificuldade" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Todas">Todas</SelectItem>
+                                <SelectItem value="Fácil">Fácil</SelectItem>
+                                <SelectItem value="Médio">Médio</SelectItem>
+                                <SelectItem value="Difícil">Difícil</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </CardContent>
+                <CardFooter>
+                    <Button className="w-full" onClick={handleFilter}>
+                        <Filter className="mr-2 h-4 w-4" />
+                        Ver Questões
+                    </Button>
+                </CardFooter>
+            </Card>
         </div>
     );
   }
 
-  const filteredQuestions = questions.filter(q => q.subject === selectedSubject);
-
   return (
     <div className="space-y-6">
-        <Button variant="outline" onClick={() => setSelectedSubject(null)}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar para Matérias
+        <Button variant="outline" onClick={() => setFilteredQuestions(null)}>
+            <Filter className="mr-2 h-4 w-4" />
+            Alterar Filtros
         </Button>
 
       <h1 className="font-headline text-3xl font-bold">Questões de {selectedSubject}</h1>
@@ -254,3 +268,5 @@ export default function QuestoesPage() {
     </div>
   );
 }
+
+    
