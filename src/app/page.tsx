@@ -20,6 +20,4 @@ export default function HomePage() {
   } else {
     redirect('/login');
   }
-
-  return null;
 }

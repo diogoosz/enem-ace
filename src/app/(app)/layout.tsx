@@ -14,9 +14,10 @@ import { Logo } from "@/components/icons";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { UserMenu } from "@/components/layout/user-menu";
 import { useFirebase } from "@/firebase";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { useAuthContext } from "@/components/auth/auth-provider";
+import { Loader2 } from "lucide-react";
 
 export default function AppLayout({
   children,
@@ -24,23 +25,49 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   const { user, isUserLoading } = useFirebase();
-  const { userPlan } = useAuthContext();
+  const { userPlan, isUserLoading: isAuthContextLoading } = useAuthContext();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
-    } else if (!isUserLoading && user && !user.emailVerified) {
-      // If email is not verified, redirect to verification page from any app page
-      router.push('/login');
+    if (isUserLoading || isAuthContextLoading) {
+      return;
     }
-  }, [user, isUserLoading, router]);
 
-  useEffect(() => {
-    if (!isUserLoading && user && user.emailVerified && !userPlan) {
-        router.push('/planos');
+    if (!user) {
+      router.push('/login');
+      return;
     }
-  }, [user, isUserLoading, userPlan, router]);
+    
+    if (!user.emailVerified) {
+      router.push('/verificar-email');
+      return;
+    }
+
+    if (!userPlan && pathname !== '/planos') {
+      router.push('/planos');
+      return;
+    }
+
+  }, [user, isUserLoading, userPlan, isAuthContextLoading, router, pathname]);
+
+  if (isUserLoading || isAuthContextLoading) {
+     return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  // If user is not authenticated or has no plan, we shouldn't render the layout
+  // This prevents brief flashes of the app layout before redirection
+  if (!user || (!userPlan && pathname !== '/planos')) {
+     return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
