@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import Image from 'next/image';
 import type { Question } from '@/lib/questions';
 import { questions } from '@/lib/questions';
 import { Button } from '@/components/ui/button';
@@ -190,6 +191,18 @@ export default function QuestoesPage() {
               </CardHeader>
               <CardContent>
                 <p className="mb-4">{question.statement}</p>
+                 {question.image && (
+                  <div className="relative aspect-video w-full my-4 rounded-md overflow-hidden">
+                    <Image
+                      src={question.image}
+                      alt={`Imagem da questão ${question.id}`}
+                      fill
+                      className="object-contain"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      priority
+                    />
+                  </div>
+                )}
                 <RadioGroup
                   value={state.selectedAnswer}
                   onValueChange={(value) => handleAnswerChange(question.id, value)}

@@ -31,6 +31,7 @@ export type GeneratePersonalizedSimuladoInput = z.infer<
 
 const QuestaoSchema = z.object({
   enunciado: z.string().describe('O enunciado da questão.'),
+  image: z.string().optional().describe('An optional placeholder URL for an image related to the question, e.g., "https://picsum.photos/seed/example-seed/600/400".'),
   alternativas: z.array(z.string()).describe('As alternativas da questão.'),
   respostaCorreta: z.string().describe('A resposta correta da questão.'),
   explicacao: z.string().describe('A explicação da resposta.'),
@@ -74,7 +75,7 @@ const questoesPrompt = ai.definePrompt({
   output: {
     schema: z.array(QuestaoSchema),
   },
-  prompt: `Você é um especialista em criar questões no estilo ENEM. Gere um array com {{{numeroQuestoes}}} questões de múltipla escolha com 5 alternativas sobre a matéria: {{{materia}}}, nível de dificuldade: {{{dificuldade}}}.\n\nCada item no array deve ser um objeto contendo o campo \"enunciado\" com o enunciado da questão, um campo \"alternativas\" contendo um array de 5 strings com as alternativas, um campo \"respostaCorreta\" contendo a alternativa correta, e um campo \"explicacao\" com uma explicação detalhada da resolução da questão.`,
+  prompt: `Você é um especialista em criar questões no estilo ENEM. Gere um array com {{{numeroQuestoes}}} questões de múltipla escolha com 5 alternativas sobre a matéria: {{{materia}}}, nível de dificuldade: {{{dificuldade}}}.\n\nCada item no array deve ser um objeto contendo o campo "enunciado", um campo opcional "image" com uma URL de imagem placeholder (ex: https://picsum.photos/seed/seed-aleatoria/600/400) se for relevante, um campo "alternativas" (array de 5 strings), um campo "respostaCorreta" e um campo "explicacao".`,
 });
 
 const resumoDesempenhoPrompt = ai.definePrompt({

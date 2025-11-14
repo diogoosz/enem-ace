@@ -20,6 +20,7 @@ export type GenerateEnemQuestionInput = z.infer<typeof GenerateEnemQuestionInput
 
 const GenerateEnemQuestionOutputSchema = z.object({
   question: z.string().describe('The question statement.'),
+  image: z.string().optional().describe('An optional placeholder URL for an image related to the question, e.g., "https://picsum.photos/seed/example-seed/600/400".'),
   alternatives: z.array(z.string()).describe('The alternatives for the question.'),
   correctAnswer: z.string().describe('The correct answer to the question.'),
   explanation: z.string().describe('The explanation of the correct answer.'),
@@ -37,7 +38,7 @@ const generateEnemQuestionPrompt = ai.definePrompt({
   prompt: `Você é um professor especialista na prova do ENEM. Sua tarefa é gerar uma questão no estilo ENEM com o seguinte formato:
 
 Questão: {enunciado da questão}
-
+Imagem (opcional): {URL de uma imagem placeholder, ex: https://picsum.photos/seed/seed-aleatoria/600/400}
 Alternativas:
 A) {alternativa A}
 B) {alternativa B}
@@ -46,10 +47,9 @@ D) {alternativa D}
 E) {alternativa E}
 
 Resposta Correta: {letra da alternativa correta}
-
 Explicação: {explicação da resposta correta}
 
-A questão deve ser da matéria de {{{subject}}} e ter nível de dificuldade {{{difficulty}}}. O enunciado da questão, as alternativas e a explicação devem ser concisos e claros.
+A questão deve ser da matéria de {{{subject}}} e ter nível de dificuldade {{{difficulty}}}. O enunciado da questão, as alternativas e a explicação devem ser concisos e claros. Inclua uma imagem quando for relevante para a questão, especialmente em Biologia e Física.
 `,
 });
 

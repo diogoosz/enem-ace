@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -199,6 +200,17 @@ export default function SimuladosPage() {
                   <AccordionContent>
                     <div className="space-y-4">
                       <p className="font-medium">{q.enunciado}</p>
+                      {q.image && (
+                        <div className="relative aspect-video w-full max-w-md mx-auto my-4 rounded-md overflow-hidden">
+                           <Image
+                            src={q.image}
+                            alt={`Imagem da questão ${i + 1}`}
+                            fill
+                            className="object-contain"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          />
+                        </div>
+                      )}
                       <RadioGroup
                         value={simuladoState.answers[i]}
                         onValueChange={(value) => handleAnswerChange(i, value)}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -128,6 +129,17 @@ export default function QuestoesExtrasPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="font-medium">{generatedQuestion.question}</p>
+            {generatedQuestion.image && (
+              <div className="relative aspect-video w-full max-w-lg mx-auto my-4 rounded-md overflow-hidden">
+                <Image
+                  src={generatedQuestion.image}
+                  alt="Imagem da questão"
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                />
+              </div>
+            )}
             <div className="space-y-2">
               {generatedQuestion.alternatives.map((alt, index) => (
                 <div key={index} className="flex items-center space-x-2 p-2 rounded-md border">
