@@ -13,7 +13,7 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateEnemQuestionInputSchema = z.object({
-  subject: z.enum(['Matemática', 'Física', 'Química', 'Biologia', 'História', 'Geografia', 'Português']).describe('The subject of the question.'),
+  subject: z.enum(['Matemática', 'Física', 'Química', 'Biologia']),
   difficulty: z.enum(['Fácil', 'Médio', 'Difícil']).describe('The difficulty level of the question.'),
 });
 export type GenerateEnemQuestionInput = z.infer<typeof GenerateEnemQuestionInputSchema>;

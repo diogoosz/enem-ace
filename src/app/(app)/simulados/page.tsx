@@ -23,7 +23,7 @@ import { hasAccess } from '@/lib/subscriptions';
 import { AccessDenied } from '@/components/auth/access-denied';
 
 const formSchema = z.object({
-  materia: z.enum(['Matemática', 'Física', 'Biologia', 'Química', 'História', 'Geografia', 'Português']),
+  materia: z.enum(['Matemática', 'Física', 'Biologia', 'Química']),
   dificuldade: z.enum(['Fácil', 'Médio', 'Difícil']),
   numeroQuestoes: z.coerce.number().min(1, 'Mínimo 1 questão').max(10, 'Máximo 10 questões'),
 });
@@ -124,9 +124,6 @@ export default function SimuladosPage() {
                           <SelectItem value="Física">Física</SelectItem>
                           <SelectItem value="Biologia">Biologia</SelectItem>
                           <SelectItem value="Química">Química</SelectItem>
-                          <SelectItem value="História">História</SelectItem>
-                          <SelectItem value="Geografia">Geografia</SelectItem>
-                          <SelectItem value="Português">Português</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

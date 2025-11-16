@@ -168,7 +168,7 @@ export default function QuestoesPage() {
             <CardDescription>Escolha uma matéria para começar a praticar com questões no estilo ENEM.</CardDescription>
           </CardHeader>
         </Card>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
           {(['Matemática', 'Física', 'Biologia', 'Química'] as const).map(subject => (
             <Card key={subject} className="flex flex-col">
               <CardHeader className="items-center text-center">
@@ -367,5 +367,3 @@ export default function QuestoesPage() {
     </div>
   );
 }
-
-    

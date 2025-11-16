@@ -13,7 +13,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const MateriasSchema = z.enum(['Matemática', 'Física', 'Biologia', 'Química', 'História', 'Geografia', 'Português']);
+const MateriasSchema = z.enum(['Matemática', 'Física', 'Biologia', 'Química']);
 const DificuldadeSchema = z.enum(['Fácil', 'Médio', 'Difícil']);
 
 const GeneratePersonalizedSimuladoInputSchema = z.object({

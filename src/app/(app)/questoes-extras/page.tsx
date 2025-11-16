@@ -19,7 +19,7 @@ import { hasAccess } from '@/lib/subscriptions';
 import { AccessDenied } from '@/components/auth/access-denied';
 
 const formSchema = z.object({
-  subject: z.enum(['Matemática', 'Física', 'Química', 'Biologia', 'História', 'Geografia', 'Português']),
+  subject: z.enum(['Matemática', 'Física', 'Química', 'Biologia']),
   difficulty: z.enum(['Fácil', 'Médio', 'Difícil']),
 });
 
@@ -85,9 +85,6 @@ export default function QuestoesExtrasPage() {
                           <SelectItem value="Física">Física</SelectItem>
                           <SelectItem value="Química">Química</SelectItem>
                           <SelectItem value="Biologia">Biologia</SelectItem>
-                          <SelectItem value="História">História</SelectItem>
-                          <SelectItem value="Geografia">Geografia</SelectItem>
-                          <SelectItem value="Português">Português</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
