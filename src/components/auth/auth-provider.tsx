@@ -18,7 +18,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // ==================================================================
 //  E-MAIL DE ADMINISTRADOR - Substitua pelo seu e-mail de cadastro
 // ==================================================================
-const ADMIN_EMAIL = 'admin@enemace.com';
+const ADMIN_EMAIL = 'diogomarciano40@gmail.com';
 // ==================================================================
 
 
