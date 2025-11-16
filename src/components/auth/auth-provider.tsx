@@ -15,6 +15,13 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// ==================================================================
+//  E-MAIL DE ADMINISTRADOR - Substitua pelo seu e-mail de cadastro
+// ==================================================================
+const ADMIN_EMAIL = 'admin@enemace.com';
+// ==================================================================
+
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { user, isUserLoading: isAuthLoading, firestore } = useFirebase();
   const [userPlan, setUserPlan] = useState<Plan | undefined>();
@@ -33,6 +40,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUserName(null);
       return;
     }
+    
+    // ==================================================================
+    //  Verificação de Administrador
+    // ==================================================================
+    if (user.email === ADMIN_EMAIL) {
+      setUserName(user.displayName || 'Admin');
+      setUserPlan('Premium');
+      setIsCustomerDataLoading(false);
+      return; // Pula a busca no Firestore para o admin
+    }
+    // ==================================================================
+
 
     // Inicia o carregamento dos dados do cliente
     setIsCustomerDataLoading(true);
