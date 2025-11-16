@@ -3,11 +3,11 @@
 export type Plan = 'Basico' | 'Intermediario' | 'Premium';
 
 // This maps your plan names to the price IDs from your Stripe products
-// You need to replace these with your actual Stripe price IDs
+// ATENÇÃO: Substitua estes IDs pelos IDs de preço reais do seu painel Stripe.
 const priceIds: Record<Plan, string> = {
-  'Basico': 'price_1PQRnaP9qA7gJ2fDEXj9t6V7',
-  'Intermediario': 'price_1PQRnvP9qA7gJ2fDABbX3JZo',
-  'Premium': 'price_1PQRofP9qA7gJ2fD80Q4lR6L',
+  'Basico': 'price_1PQRnaP9qA7gJ2fDEXj9t6V7', // <-- SUBSTITUA ESTE ID
+  'Intermediario': 'price_1PQRnvP9qA7gJ2fDABbX3JZo', // <-- SUBSTITUA ESTE ID
+  'Premium': 'price_1PQRofP9qA7gJ2fD80Q4lR6L', // <-- SUBSTITUA ESTE ID
 };
 
 export const getPriceIdForPlan = (plan: Plan): string | null => {
