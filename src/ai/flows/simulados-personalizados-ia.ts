@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file defines a Genkit flow for generating personalized ENEM (Exame Nacional do Ensino Médio) mock exams.
@@ -75,6 +76,7 @@ const questoesPrompt = ai.definePrompt({
   output: {
     schema: z.array(QuestaoSchema),
   },
+  model: 'googleai/gemini-1.5-flash',
   prompt: `Você é um especialista em criar questões no estilo ENEM. Gere um array com {{{numeroQuestoes}}} questões de múltipla escolha com 5 alternativas sobre a matéria: {{{materia}}}, nível de dificuldade: {{{dificuldade}}}.\n\nCada item no array deve ser um objeto contendo o campo "enunciado", um campo opcional "image" com uma URL de imagem placeholder (ex: https://picsum.photos/seed/seed-aleatoria/600/400) se for relevante, um campo "alternativas" (array de 5 strings), um campo "respostaCorreta" e um campo "explicacao".`,
 });
 
