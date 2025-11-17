@@ -38,7 +38,7 @@ const QuestaoSchema = z.object({
   explicacao: z.string().describe('A explicação da resposta.'),
 });
 
-// A saída agora só se preocupa com o simulado em si. O resumo de desempenho foi removido.
+// A saída agora só se preocupa com o simulado em si e o resumo.
 const GeneratePersonalizedSimuladoOutputSchema = z.object({
   simulado: z.array(QuestaoSchema).describe('O simulado gerado.'),
    resumoDesempenho: z
@@ -85,10 +85,10 @@ const generatePersonalizedSimuladoFlow = ai.defineFlow(
     // Chamada única e direta para gerar as questões.
     const { output } = await questoesPrompt(input);
     
-    // Se a IA não retornar nada, o que pode causar o erro, retornamos um array vazio.
+    // Se a IA não retornar nada, o que pode causar o erro, retornamos um array vazio para evitar o crash.
     const simulado = output?.simulado ?? [];
 
-    // O resumo é gerado dinamicamente com base nas respostas do usuário, então podemos retornar um valor padrão aqui.
+    // O resumo é gerado dinamicamente com base nas respostas do usuário no front-end, então retornamos um valor padrão aqui.
     const resumo = 'Complete o simulado para receber uma análise de desempenho da IA.';
     
     return {
