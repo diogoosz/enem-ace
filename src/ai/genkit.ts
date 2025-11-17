@@ -1,9 +1,9 @@
+
 import {genkit, configureGenkit} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
-import { config } from 'dotenv';
 
-config({ path: '.env' });
-
+// Esta é a forma robusta de garantir que a chave seja lida tanto em desenvolvimento (do .env)
+// quanto em produção (do segredo configurado no App Hosting).
 configureGenkit({
   plugins: [
     googleAI({
